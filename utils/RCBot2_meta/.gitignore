@@ -1,0 +1,6 @@
+.vs/*
+Debug/*
+Release/*
+Environment.props
+*.VC.db
+*.vcxproj.user

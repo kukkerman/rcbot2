@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <MetamodSourceDir></MetamodSourceDir>
+    <HL2Dir></HL2Dir>
+    <MetamodPluginDir>$(HL2Dir)\dod\addons</MetamodPluginDir>
+    <HL2Executable>$(HL2Dir)\hl2.exe</HL2Executable>
+    <HL2CommandLineArguments>-console -insecure -novid -game dod -developer 1 +map dod_anzio</HL2CommandLineArguments>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemDefinitionGroup />
+  <ItemGroup>
+    <BuildMacro Include="MetamodSourceDir">
+      <Value>$(MetamodSourceDir)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="HL2Dir">
+      <Value>$(HL2Dir)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="MetamodPluginDir">
+      <Value>$(MetamodPluginDir)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="HL2Executable">
+      <Value>$(HL2Executable)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="HL2CommandLineArguments">
+      <Value>$(HL2CommandLineArguments)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+  </ItemGroup>
+</Project>
