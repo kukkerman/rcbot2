@@ -56,6 +56,9 @@
 #include "bot_sigscan.h"
 #include "bot_profiling.h"
 //#include "ndebugoverlay.h"
+
+#include "dod_server_patcher.h"
+
 CBotTF2 *g_pLastBot;
 
 SH_DECL_HOOK6(IServerGameDLL, LevelInit, SH_NOATTRIB, 0, bool, char const *, char const *, char const *, char const *, bool, bool);
@@ -816,6 +819,26 @@ bool RCBotPluginMeta::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxle
 		rcbot_weaponequip_offset.SetValue(val);
 	if (pKVL->getInt("gamerules_win", &val))
 		rcbot_gamerules_offset.SetValue(val);
+
+	/*
+	char serverLibPath[512];
+	ismm->PathFormat(serverLibPath, 512, "%s/bin/server.dll", ismm->GetBaseDir());
+	patchDodServer(serverLibPath);
+	*/
+
+	/*
+	auto pluginManager = reinterpret_cast<ISmmPluginManager*>(ismm->MetaFactory(MMIFACE_PLMANAGER, nullptr, nullptr));
+
+	if (pluginManager != nullptr) {
+		META_CONPRINTF("Base dir = %s\n", ismm->GetBaseDir());
+
+		void *handle = nullptr;
+		if (pluginManager->QueryHandle(g_PLID, &handle)) {
+			META_CONPRINTF("Plugin handle = %p\n", handle);
+		}
+	}
+	*/
+
 #else
 
 	if (pKVL->getInt("givenameditem_linux", &val))

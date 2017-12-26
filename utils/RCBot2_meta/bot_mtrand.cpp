@@ -74,6 +74,8 @@
  *
  */
 #include "bot_mtrand.h"
+#include <random>
+#include <chrono>
 // non-inline function definitions and static member definitions cannot
 // reside in header file because of the risk of multiple declarations
 
@@ -104,6 +106,18 @@ int randomInt ( int imin, int imax )
 float randomFloat ( float fmin, float fmax )
 {
 	return static_cast<float>(fmin + ((randomOne())*(fmax - fmin)));
+}
+
+float randomNormalFloat(float fmin, float fmax) {
+	static std::default_random_engine generator(static_cast<unsigned>(std::chrono::system_clock::now().time_since_epoch().count()));
+	static std::normal_distribution<float> rnd;
+
+	float r;
+	do {
+		r = rnd(generator);
+	} while (r < -3.0f || r > 3.0f);
+	
+	return (r / 6.0f + 0.5f) * (fmax - fmin) + fmin;
 }
 
 void MTRand_int32::gen_state() { // generate new state vector

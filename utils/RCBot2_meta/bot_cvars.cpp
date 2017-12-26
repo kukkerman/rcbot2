@@ -18,7 +18,7 @@ ConVar rcbot_projectile_tweak("rcbot_projtweak","0.05",0,"Tweaks the bots knowle
 //ConVar bot_sv_cheat_warning("rcbot_sv_cheats_warning","0",0,"If disabled, bots will try to spawn even if sv_cheats is 0 - use only with admin cvar plugin");
 ConVar bot_cmd_enable_wpt_sounds("rcbot_enable_wpt_sounds","1",0,"Enable/disable sound effects when editing waypoints");
 //ConVar bot_cmd_nocheats("rcbot_botcmd_nocheats","1",0,"If 1 bots don't need cheats to play");
-ConVar bot_general_difficulty("rcbot_skill","0.6",0,"General difficulty of the bots. 0.5 = stock, < 0.5 easier, > 0.5 = harder");
+ConVar bot_general_difficulty("rcbot_skill","1.0",0,"General difficulty of the bots. 1.0 = stock, < 1.0 easier, > 1.0 = harder");
 //ConVar bot_sv_cheats_auto("rcbot_sv_cheats_auto","0",0,"automatically put sv_cheats on and off for when adding bots only");
 ConVar bot_visrevs_clients("rcbot_visrevs_clients","4",0,"how many revs the bot searches for visible players and enemies, lower to reduce cpu usage");
 ConVar bot_spyknifefov("rcbot_spyknifefov","80",0,"the FOV from the enemy that spies must backstab from");

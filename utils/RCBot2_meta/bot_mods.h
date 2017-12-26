@@ -53,6 +53,7 @@
 class CBotNeuralNet;
 
 #include <vector>
+#include <array>
 using namespace std;
 
 
@@ -168,6 +169,45 @@ public:
 		*iOn = 0;
 		*iOff = 0;
 	}
+
+	virtual int getMinTeamId() const {
+		return -1;
+	}
+
+	virtual int getMaxTeeamId() const {
+		return -1;
+	}
+
+	virtual int getMinClassId() const {
+		return -1;
+	}
+
+	virtual int getMaxClassId() const {
+		return -1;
+	}
+
+	virtual const char* getNameForTeamId(int teamId) const {
+		return CStrings::getString("unknown_team");
+	}
+
+	virtual int getIdForTeamName(const char *teamName) const {
+		return -1;
+	}
+
+	virtual const char* getNameForClassId(int classId) const {
+		return CStrings::getString("unknown_class");
+	}
+
+	virtual int getIdForClassName(const char *className) const {
+		return -1;
+	}
+
+	virtual const vector<const char*>& getBotNamesForTeamId(int teamId) const {
+		static const vector<const char*> empty;
+		return empty;
+	}
+
+	virtual void loadBotNames() { }
 
 	inline bool needCheatsHack ()
 	{
@@ -628,6 +668,70 @@ public:
 	/*static unsigned short int getNumberOfClassOnTeam ( int iClass );
 	static unsigned short int getNumberOfPlayersOnTeam ( int iClass );*/
 
+	int getMinTeamId() const override {
+		return TEAM_ALLIES;
+	}
+
+	int getMaxTeeamId() const override {
+		return TEAM_AXIS;
+	}
+
+	int getMinClassId() const override {
+		return DOD_CLASS_RIFLEMAN;
+	}
+
+	int getMaxClassId() const override {
+		return DOD_CLASS_ROCKET;
+	}
+
+	const char* getNameForTeamId(int teamId) const override {
+		switch (teamId) {
+		case TEAM_ALLIES:
+			return CStrings::getString("allies");
+		
+		case TEAM_AXIS:
+			return CStrings::getString("axis");
+		}
+
+		return CBotMod::getNameForTeamId(teamId);
+	}
+
+	const vector<const char*>& getBotNamesForTeamId(int teamId) const override {
+		return botNames[teamId - TEAM_ALLIES];
+	}
+
+
+	int getIdForTeamName(const char *teamName) const override {
+		if (teamName == nullptr || teamName[0] == 0) {
+			return CBotMod::getIdForTeamName(teamName);
+		}
+
+		if (Q_strcasecmp(teamName, "allies") == 0) {
+			return TEAM_ALLIES;
+
+		} else if (Q_strcasecmp(teamName, "axis") == 0) {
+			return TEAM_AXIS;
+		}
+
+		return CBotMod::getIdForTeamName(teamName);
+	}
+
+	const char* getNameForClassId(int classId) const override {
+		if (classId >= getMinClassId() && classId <= getMaxClassId()) {
+			return classNames[classId - getMinClassId()];
+		}
+
+		return CBotMod::getNameForClassId(classId);
+	}
+
+	int getIdForClassName(const char *className) const override {
+		int i;
+		for (i = getMinClassId(); i <= getMaxClassId() && Q_strcasecmp(className, classNames[i - getMinClassId()]) != 0; i++) { }
+		return i <= getMaxClassId() ? i : CBotMod::getIdForClassName(className);
+	}
+
+	void loadBotNames() override;
+
 protected:
 
 	void initMod ();
@@ -652,6 +756,9 @@ protected:
 
 									// enemy			// team
 	static float fAttackProbLookUp[MAX_DOD_FLAGS+1][MAX_DOD_FLAGS+1];
+
+	static array<vector<const char*>, TEAM_AXIS - TEAM_ALLIES + 1> botNames;
+	static const array<const char*, DOD_CLASS_ROCKET - DOD_CLASS_RIFLEMAN + 1> classNames;
 };
 
 class CDODModDedicated : public CDODMod

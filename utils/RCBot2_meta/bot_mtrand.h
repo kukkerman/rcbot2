@@ -76,6 +76,7 @@
 
 int randomInt ( int imin, int imax );
 float randomFloat ( float fmin, float fmax );
+float randomNormalFloat(float fmin, float fmax);
 
 class MTRand_int32 { // Mersenne Twister random number generator
 public:

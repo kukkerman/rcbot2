@@ -58,7 +58,15 @@ int CDODMod::m_iBombAreaAxis = 0;
 float CDODMod::fAttackProbLookUp[MAX_DOD_FLAGS+1][MAX_DOD_FLAGS+1];
 vector<edict_wpt_pair_t> CDODMod::m_BombWaypoints;
 vector<edict_wpt_pair_t> CDODMod::m_BreakableWaypoints;
-
+array<vector<const char*>, TEAM_AXIS - TEAM_ALLIES + 1> CDODMod::botNames;
+const array<const char*, DOD_CLASS_ROCKET - DOD_CLASS_RIFLEMAN + 1> CDODMod::classNames{
+	"rifleman",
+	"assault",
+	"support",
+	"sniper",
+	"machinegunner",
+	"rocket"
+};
 
 eDODVoiceCommand_t g_DODVoiceCommands[DOD_VC_INVALID] = 
 {
@@ -172,6 +180,7 @@ void CDODMod :: initMod ()
 
 
 	CBots::controlBotSetup(true);
+	//CBots::controlBotSetup(false);
 
 	CWeapons::loadWeapons((m_szWeaponListName == NULL) ? "DOD" : m_szWeaponListName, DODWeaps);
 	//CWeapons::loadWeapons("DOD", DODWeaps);
@@ -180,6 +189,8 @@ void CDODMod :: initMod ()
 		CWeapons::addWeapon(new CWeapon(DODWeaps[i]));*/
 
 	m_pResourceEntity = NULL;
+
+	loadBotNames();
 }
 
 void CDODMod :: mapInit ()
@@ -1006,4 +1017,35 @@ void CDODMod :: getTeamOnlyWaypointFlags ( int iTeam, int *iOn, int *iOff )
 	}
 
 
+}
+
+void CDODMod::loadBotNames() {
+	char buffer[1024];
+
+	for (auto i = getMinTeamId(); i <= getMaxTeeamId(); i++) {
+		char folder[64];
+		Q_snprintf(folder, 64, "%s/%s", BOT_PROFILE_FOLDER, getModFolder());
+
+		CBotGlobals::buildFileName(buffer, getNameForTeamId(i), folder, "txt");
+		auto f = CBotGlobals::openFile(buffer, "r");
+		if (f == NULL) {
+			continue;
+		}
+
+		while (fgets(buffer, 1024, f) != NULL) {
+			int l = Q_strlen(buffer);
+			if (l > 0 && buffer[l - 1] == '\n') {
+				buffer[l - 1] = 0;
+				l--;
+			}
+
+			if (l == 0) {
+				continue;
+			}
+
+			botNames[i - getMinTeamId()].emplace_back(CStrings::getString(buffer));
+		}
+
+		fclose(f);
+	}
 }

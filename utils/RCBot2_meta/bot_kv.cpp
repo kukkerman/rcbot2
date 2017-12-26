@@ -114,10 +114,17 @@ bool CRCBotKeyValueList :: getInt ( const char *key, int *val )
 
 	pKV = getKV(key);
 
-	if ( !pKV )
+	if ( !pKV || pKV->getValue() == nullptr || *pKV->getValue() == 0)
 		return false;
-	
-	*val = atoi(pKV->getValue());
+
+	long l;
+	char *endPtr = nullptr;
+	l = strtol(pKV->getValue(), &endPtr, 10);
+	if (endPtr == nullptr || *endPtr != 0) {
+		return false;
+	}
+
+	*val = l;
 
 	return true;
 }

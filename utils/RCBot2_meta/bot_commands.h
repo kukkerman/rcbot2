@@ -528,6 +528,8 @@ public:
 
 	eBotCommandResult execute ( CClient *pClient, const char *pcmd, const char *arg1, const char *arg2, const char *arg3, const char *arg4, const char *arg5 );
 
+	void printHelp(edict_t *pPrintTo) override;
+
 	virtual bool canbeUsedDedicated () { return true; }
 };
 

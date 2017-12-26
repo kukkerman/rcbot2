@@ -337,12 +337,12 @@ bool CBot :: createBotFromEdict(edict_t *pEdict, CBotProfile *pProfile)
 
 	CBotGlobals::botMessage(NULL, 0, "===================================");
 	CBotGlobals::botMessage(NULL, 0, "Creating Bot: %s", m_pProfile->m_szName);
-	CBotGlobals::botMessage(NULL, 0, "AimSkill: %f", m_pProfile->m_fAimSkill);
-	CBotGlobals::botMessage(NULL, 0, "Braveness: %f", m_pProfile->m_fBraveness);
-	CBotGlobals::botMessage(NULL, 0, "PathTicks: %d", m_pProfile->m_iPathTicks);
-	CBotGlobals::botMessage(NULL, 0, "Sensitivity: %d", m_pProfile->m_iSensitivity);
-	CBotGlobals::botMessage(NULL, 0, "VisionTicks: %d", m_pProfile->m_iVisionTicks);
-	CBotGlobals::botMessage(NULL, 0, "VisionTicksClients: %d", m_pProfile->m_iVisionTicksClients);
+	CBotGlobals::botMessage(NULL, 0, "AimSkill: %f", m_pProfile->getAimSkill());
+	CBotGlobals::botMessage(NULL, 0, "Braveness: %f", m_pProfile->getBraveness());
+	CBotGlobals::botMessage(NULL, 0, "PathTicks: %d", m_pProfile->getPathTicks());
+	CBotGlobals::botMessage(NULL, 0, "Sensitivity: %d", m_pProfile->getSensitivity());
+	CBotGlobals::botMessage(NULL, 0, "VisionTicks: %d", m_pProfile->getVisionTicks());
+	CBotGlobals::botMessage(NULL, 0, "VisionTicksClients: %d", m_pProfile->getVisionTicksClients());
 	CBotGlobals::botMessage(NULL, 0, "===================================");
 
 
@@ -1538,7 +1538,7 @@ void CBot :: touchedWpt ( CWaypoint *pWaypoint, int iNextWaypoint, int iPrevWayp
 
 void CBot :: updateDanger ( float fBelief ) 
 { 
-	m_fCurrentDanger = (m_fCurrentDanger * m_pProfile->m_fBraveness) + (fBelief * (1.0f-m_pProfile->m_fBraveness)); 
+	m_fCurrentDanger = (m_fCurrentDanger * m_pProfile->getBraveness()) + (fBelief * (1.0f-m_pProfile->getBraveness())); 
 }
 // setup buttons and data structures
 void CBot :: setup ()
@@ -1631,7 +1631,7 @@ bool CBot :: hurt ( edict_t *pAttacker, int iHealthNow, bool bDontHide )
 	m_iPrevHealth = iHealthNow;	
 
 	// TO DO: replace with perceptron method
-	if ( m_iAccumulatedDamage > (m_pPlayerInfo->GetMaxHealth()*m_pProfile->m_fBraveness) )
+	if ( m_iAccumulatedDamage > (m_pPlayerInfo->GetMaxHealth()*m_pProfile->getBraveness()) )
 	{
 		if ( !bDontHide )
 		{
@@ -2090,7 +2090,7 @@ void CBot :: listenToPlayer ( edict_t *pPlayer, bool bIsEnemy, bool bIsAttacking
 				m_vListenPosition = p->GetAbsOrigin() + (forward*1024.0f);		
 
 				// not investigating any noise right now -- depending on my braveness I will check it out
-				if ( !m_pSchedules->isCurrentSchedule(SCHED_INVESTIGATE_NOISE) && (randomFloat(0.0f,0.75f) < m_pProfile->m_fBraveness) )
+				if ( !m_pSchedules->isCurrentSchedule(SCHED_INVESTIGATE_NOISE) && (randomFloat(0.0f,0.75f) < m_pProfile->getBraveness()) )
 				{
 					trace_t *TraceResult = CBotGlobals::getTraceResult();
 					
@@ -2381,7 +2381,7 @@ Vector CBot::getAimVector ( edict_t *pEntity )
 	v_size = pEntity->GetCollideable()->OBBMaxs() - pEntity->GetCollideable()->OBBMins();
 	v_size = v_size * 0.5f;
 
-	fSensitivity = (float)m_pProfile->m_iSensitivity/20;
+	fSensitivity = (float)m_pProfile->getSensitivity()/20;
 
 	v_origin = CBotGlobals::entityOrigin(pEntity);
 
@@ -2415,7 +2415,7 @@ Vector CBot::getAimVector ( edict_t *pEntity )
 
 	m_vAimVector = v_origin + m_vAimOffset;
 
-	m_fNextUpdateAimVector = engine->Time() + (1.0f-m_pProfile->m_fAimSkill)*0.2f;
+	m_fNextUpdateAimVector = engine->Time() + (1.0f-m_pProfile->getAimSkill())*0.2f;
 
 #ifndef __linux__
 	if ( CClients::clientsDebugging(BOT_DEBUG_AIM) && CClients::isListenServerClient(CClients::get(0)) )
@@ -2475,7 +2475,7 @@ void CBot::modAim ( edict_t *pEntity, Vector &v_origin, Vector *v_desired_offset
 		if ( fDist < 160 )
 			fVelFactor = 0.001f;
 
-		fDistFactor = (1.0f - m_pProfile->m_fAimSkill) + (fDist*0.000125f)*(m_fFov/90.0f);
+		fDistFactor = (1.0f - m_pProfile->getAimSkill()) + (fDist*0.000125f)*(m_fFov/90.0f);
 	}
 	// origin is always the bottom part of the entity
 	// add body height
@@ -2512,7 +2512,7 @@ void CBot::modAim ( edict_t *pEntity, Vector &v_origin, Vector *v_desired_offset
 	v_desired_offset->z = randomFloat(-vel.z,vel.z)*fDistFactor*v_size.z;
 
 	// target
-	v_desired_offset->z += (fHeadOffset * m_pProfile->m_fAimSkill) + (randomFloat(0.0,1.0f-m_pProfile->m_fAimSkill)*fHeadOffset);
+	v_desired_offset->z += (fHeadOffset * m_pProfile->getAimSkill()) + (randomFloat(0.0,1.0f-m_pProfile->getAimSkill())*fHeadOffset);
 
 }
 
@@ -2870,7 +2870,7 @@ void CBot :: doLook ()
 		if ( rcbot_supermode.GetBool() || m_bIncreaseSensitivity || onLadder() )
 			fSensitivity = 15.0f;
 		else
-			fSensitivity = (float)m_pProfile->m_iSensitivity;
+			fSensitivity = (float)m_pProfile->getSensitivity();
 
 		QAngle requiredAngles;
 
@@ -2997,7 +2997,7 @@ void CBot :: duck ( bool hold )
 // TO DO: perceptron method
 bool CBot::wantToFollowEnemy ()
 {
-	return getHealthPercent() > (1.0f - m_pProfile->m_fBraveness);
+	return getHealthPercent() > (1.0f - m_pProfile->getBraveness());
 }
 ////////////////////////////
 void CBot :: getTasks (unsigned int iIgnore)
@@ -3053,9 +3053,9 @@ bool CBots :: controlBot ( edict_t *pEdict )
 
 	if ( pBotProfile == NULL )
 	{
-		CBotGlobals::botMessage(NULL,0,"No bot profiles are free, creating a default bot...");
+		CBotGlobals::botMessage(NULL,0,"No bot profiles are free, creating a random bot...");
 
-		pBotProfile = CBotProfiles::getDefaultProfile();
+		pBotProfile = CBotProfiles::genRandomProfile(-1, -1, NULL);
 
 		if ( pBotProfile == NULL )
 			return false;
@@ -3100,9 +3100,9 @@ bool CBots :: controlBot ( const char *szOldName, const char *szName, const char
 
 	if ( pBotProfile == NULL )
 	{
-		CBotGlobals::botMessage(NULL,0,"No bot profiles are free, creating a default bot...");
+		CBotGlobals::botMessage(NULL,0,"No bot profiles are free, creating a random bot...");
 
-		pBotProfile = CBotProfiles::getDefaultProfile();
+		pBotProfile = CBotProfiles::genRandomProfile(-1, -1, NULL);
 
 		if ( pBotProfile == NULL )
 			return false;
@@ -3131,13 +3131,17 @@ bool CBots :: createBot (const char *szClass, const char *szTeam, const char *sz
 
 	m_flAddKickBotTime = engine->Time() + rcbot_addbottime.GetFloat();
 
-	pBotProfile = CBotProfiles::getRandomFreeProfile(szTeam != NULL && *szTeam ? atoi(szTeam) : -1);
+	const int classId = pMod->getIdForClassName(szClass);
+	const int teamId = pMod->getIdForTeamName(szTeam);
+
+	pBotProfile = CBotProfiles::getRandomFreeProfile(classId, teamId);
+	//pBotProfile = CBotProfiles::genRandomProfile(teamId, classId, szName);
 
 	if ( pBotProfile == NULL )
 	{
-		CBotGlobals::botMessage(NULL,0,"No bot profiles are free, creating a default bot...");
+		CBotGlobals::botMessage(NULL,0,"No suitable free bot profile found, creating a random bot...");
 
-		pBotProfile = CBotProfiles::getDefaultProfile();
+		pBotProfile = CBotProfiles::genRandomProfile(classId, teamId, szName);
 
 		if ( pBotProfile == NULL )
 			return false;
@@ -3145,12 +3149,30 @@ bool CBots :: createBot (const char *szClass, const char *szTeam, const char *sz
 
 	m_pNextProfile = pBotProfile;
 
+	if (m_pNextProfile->m_iClass == -1) {
+		m_pNextProfile->m_iClass = classId != -1 ? classId : randomInt(pMod->getMinClassId(), pMod->getMaxClassId());
+	}
+
+	if (m_pNextProfile->m_iTeam == -1) {
+		m_pNextProfile->m_iTeam = teamId != -1 ? teamId : randomInt(pMod->getMinTeamId(), pMod->getMaxTeeamId());
+	}
+
+	if (szName != nullptr && szName[0] != 0) {
+		strncpy(m_szNextName, szName, 63);
+	} else {
+		strncpy(m_szNextName, m_pNextProfile->m_szName, 63);
+	}
+	m_szNextName[63] = 0;
+	szOVName = m_szNextName;
+
+	/*
 	SET_PROFILE_DATA_INT(szClass,m_iClass);
 	SET_PROFILE_DATA_INT(szTeam,m_iTeam);
 	SET_PROFILE_STRING(szName,szOVName,m_szName);
 
 	strncpy(m_szNextName,szOVName,63);
 	m_szNextName[63] = 0;
+	*/
 
 	if ( CBots::controlBots() )
 	{

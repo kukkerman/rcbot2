@@ -1122,7 +1122,7 @@ bool CWaypointNavigator :: workRoute ( Vector vFrom,
 				//succ->setCost(fCost-((MAX_BELIEF*fBeliefSensitivity)-(m_fBelief[iSucc]*(fBeliefSensitivity-m_pBot->getProfile()->m_fBraveness))));	
 			}
 			else
-				succ->setCost(fCost+(m_fBelief[iSucc]*(fBeliefSensitivity-m_pBot->getProfile()->m_fBraveness)));	
+				succ->setCost(fCost+(m_fBelief[iSucc]*(fBeliefSensitivity-m_pBot->getProfile()->getBraveness())));	
 
 			succ->setWaypoint(iSucc);
 

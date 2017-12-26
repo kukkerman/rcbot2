@@ -1019,6 +1019,20 @@ eBotCommandResult CAddBotCommand :: execute ( CClient *pClient, const char *pcmd
 
 	return COMMAND_ACCESSED;
 }
+
+void CAddBotCommand::printHelp(edict_t *pPrintTo) {
+	static char helpMessage[256] = "adds a new bot to the game.\nusage: addbot <team> <class> <name>";
+
+	const auto mod = CBotGlobals::getCurrentMod();
+	switch (mod->getModId()) {
+	case MOD_DOD:
+		Q_strcat(helpMessage, "\n  team = allies axis\n  class = rifleman assault support sniper machinegunner|mg rocket", 256);
+		break;
+	}
+
+	CBotGlobals::botMessage(pPrintTo, 0, helpMessage);
+}
+
 //////////////////////
 //edits schedules
 

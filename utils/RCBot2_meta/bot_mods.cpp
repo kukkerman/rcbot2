@@ -417,6 +417,7 @@ void CBotMod :: initMod ()
 	m_bPlayerHasSpawned = false;
 
 	CWeapons::loadWeapons(m_szWeaponListName, NULL);
+	loadBotNames();
 }
 
 void CBotMod :: mapInit ()

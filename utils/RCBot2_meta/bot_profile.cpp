@@ -38,7 +38,21 @@
 #include "bot_kv.h"
 
 vector <CBotProfile*> CBotProfiles :: m_Profiles;
-CBotProfile *CBotProfiles :: m_pDefaultProfile = NULL;
+list <CBotProfile> CBotProfiles::randomProfiles;
+
+extern ConVar bot_general_difficulty;
+
+inline float fclamp(float v, float min, float max) {
+	if (v < min) {
+		v = min;
+	} else if (v > max) {
+		v = max;
+	}
+
+	return v;
+}
+
+CBotProfile::CBotProfile() { }
 
 CBotProfile :: CBotProfile ( CBotProfile &other )
 {
@@ -48,28 +62,85 @@ CBotProfile :: CBotProfile ( CBotProfile &other )
 	m_szModel = CStrings::getString(other.m_szModel);
 }
 
-CBotProfile :: CBotProfile (
-		const char *szName, 
-		const char *szModel, 
-		int iTeam, 
-		int iVisionTicks, 
-		int iPathTicks, 
-		int iVisionTicksClients,
-		int iSensitivity,
-		float fBraveness,
-		float fAimSkill,
-		int iClass )
-{ 
-	m_iVisionTicksClients = iVisionTicksClients;
-	m_iSensitivity = iSensitivity;
-	m_fBraveness = fBraveness;
-	m_fAimSkill = fAimSkill;
-	m_szName = CStrings::getString(szName);
-	m_szModel = CStrings::getString(szModel);
-	m_iPathTicks = iPathTicks;
-	m_iVisionTicks = iVisionTicks;
-	m_iTeam = iTeam;
-	m_iClass = iClass;
+CBotProfile CBotProfile::genRandom(int teamId, int classId, const char *name) {
+	CBotProfile profile;
+
+	const auto mod = CBotGlobals::getCurrentMod();
+
+	if (teamId == -1) {
+		teamId = randomInt(mod->getMinTeamId(), mod->getMaxTeeamId());
+	}
+
+	if (classId == -1) {
+		classId = randomInt(mod->getMinClassId(), mod->getMaxClassId());
+	}
+
+	const char *botName = DEFAULT_BOT_NAME;
+	if (name != nullptr && name[0] != 0) {
+		botName = name;
+
+	} else {
+		const auto &names = mod->getBotNamesForTeamId(teamId);
+		if (!names.empty()) {
+			botName = names[randomInt(0, names.size() - 1)];
+		}
+	}
+
+	profile.m_szName = CStrings::getString(botName);
+	profile.m_iTeam = teamId;
+	profile.m_iClass = classId;
+	profile.m_iVisionTicks = randomNormalFloat(CBotProfile::minVisionTicks, CBotProfile::maxVisionTicks);
+	profile.m_iPathTicks = randomNormalFloat(CBotProfile::minPathTicks, CBotProfile::maxPathTicks);
+	profile.m_iVisionTicksClients = randomNormalFloat(CBotProfile::minVisionTicksClients, CBotProfile::maxVisionTicksClients);
+	profile.m_iSensitivity = randomNormalFloat(CBotProfile::minSensitivity, CBotProfile::maxSensitivity);
+	profile.m_fBraveness = randomNormalFloat(CBotProfile::minBraveness, CBotProfile::maxBraveness);
+	profile.m_fAimSkill = randomNormalFloat(CBotProfile::minAimSkill, CBotProfile::maxAimSkill);
+
+	return profile;
+}
+
+CBotProfile CBotProfile::parseFromFile(FILE *f) {
+	CBotProfile profile;
+	
+	CRCBotKeyValueList kv;
+	kv.parseFile(f);
+
+	kv.getInt("team", &profile.m_iTeam);
+	kv.getInt("class", &profile.m_iClass);
+	kv.getString("model", &profile.m_szModel);
+	kv.getString("name", &profile.m_szName);
+	kv.getInt("visionticks", &profile.m_iVisionTicks);
+	kv.getInt("visionticksclients", &profile.m_iVisionTicksClients);
+	kv.getInt("pathticks", &profile.m_iPathTicks);
+	kv.getInt("sensitivity", &profile.m_iSensitivity);
+	kv.getFloat("aim_skill", &profile.m_fAimSkill);
+	kv.getFloat("braveness", &profile.m_fBraveness);
+
+	return profile;
+}
+
+int CBotProfile::getVisionTicks() const {
+	return fclamp(m_iVisionTicks * bot_general_difficulty.GetFloat(), minVisionTicks, maxVisionTicks);
+}
+
+int CBotProfile::getPathTicks() const {
+	return fclamp(m_iPathTicks * bot_general_difficulty.GetFloat(), minPathTicks, maxPathTicks);
+}
+
+int CBotProfile::getVisionTicksClients() const {
+	return fclamp(m_iVisionTicksClients * bot_general_difficulty.GetFloat(), minVisionTicksClients, maxVisionTicksClients);
+}
+
+int CBotProfile::getSensitivity() const {
+	return fclamp(m_iSensitivity * bot_general_difficulty.GetFloat(), minSensitivity, maxSensitivity);
+}
+
+float CBotProfile::getBraveness() const {
+	return fclamp(m_fBraveness * bot_general_difficulty.GetFloat(), minBraveness, maxBraveness);
+}
+
+float CBotProfile::getAimSkill() const {
+	return fclamp(m_fAimSkill * bot_general_difficulty.GetFloat(), minAimSkill, maxBraveness);
 }
 
 void CBotProfiles :: deleteProfiles ()
@@ -81,23 +152,8 @@ void CBotProfiles :: deleteProfiles ()
 	}
 
 	m_Profiles.clear();
-
-	delete m_pDefaultProfile;
-	m_pDefaultProfile = NULL;
 }
 
-// requires CBotProfile 'read' declared
-#ifndef __linux__
-#define READ_PROFILE_STRING(kvname,varname) if ( !pKVL->getString(##kvname##,&read.varname) ) { read.varname = m_pDefaultProfile->varname; }
-#define READ_PROFILE_INT(kvname,varname) if ( !pKVL->getInt(##kvname##,&read.varname) ) { read.varname = m_pDefaultProfile->varname; }
-// reads integers between 0 and 100 and converts to between 0.0 and 1.0
-#define READ_PROFILE_FLOAT(kvname,varname) { float fval; if ( !pKVL->getFloat(##kvname##,&fval) ) { read.varname = m_pDefaultProfile->varname; } else { read.varname = fval * 0.01f; } }
-#else
-#define READ_PROFILE_STRING(kvname,varname) if ( !pKVL->getString(#kvname,&read.varname) ) { read.varname = m_pDefaultProfile->varname; }
-#define READ_PROFILE_INT(kvname,varname) if ( !pKVL->getInt(#kvname,&read.varname) ) { read.varname = m_pDefaultProfile->varname; }
-// reads integers between 0 and 100 and converts to between 0.0 and 1.0
-#define READ_PROFILE_FLOAT(kvname,varname) { float fval; if ( !pKVL->getFloat(#kvname,&fval) ) { read.varname = m_pDefaultProfile->varname; } else { read.varname = fval * 0.01f; } }
-#endif
 // find profiles and setup list
 void CBotProfiles :: setupProfiles ()
 {
@@ -108,21 +164,7 @@ void CBotProfiles :: setupProfiles ()
 
 	extern ConVar bot_anglespeed;
 
-	// Setup Default profile
-	m_pDefaultProfile = new CBotProfile(
-		DEFAULT_BOT_NAME, // name
-		"default", // model (team in HL2DM)
-		-1, // iTeam
-		CBotVisibles::DEFAULT_MAX_TICKS, // vis ticks
-		IBotNavigator::MAX_PATH_TICKS, // path ticks
-		2, // visrevs clients
-		8.0f, // sensitivity
-		0.5f, // braveness
-		0.5f, // aim skill
-		-1 // class
-		);	
-
-	// read profiles
+		// read profiles
 	iId = 1;
 	bDone = false;
 
@@ -135,29 +177,12 @@ void CBotProfiles :: setupProfiles ()
 
 		if ( fp )
 		{
-			CBotProfile read;
-			CRCBotKeyValueList *pKVL = new CRCBotKeyValueList();
+			CBotGlobals::botMessage(NULL, 0, "Reading bot profile \"%s\"", filename);
 
-			CBotGlobals::botMessage(NULL,0,"Reading bot profile \"%s\"",filename);
-
-			pKVL->parseFile(fp);
-
-			READ_PROFILE_INT("team",m_iTeam);
-			READ_PROFILE_STRING("model",m_szModel);
-			READ_PROFILE_STRING("name",m_szName);
-			READ_PROFILE_INT("visionticks",m_iVisionTicks);
-			READ_PROFILE_INT("pathticks",m_iPathTicks);
-			READ_PROFILE_INT("visionticksclients",m_iVisionTicksClients);
-			READ_PROFILE_INT("sensitivity",m_iSensitivity);
-			READ_PROFILE_FLOAT("aim_skill",m_fAimSkill);
-			READ_PROFILE_FLOAT("braveness",m_fBraveness);
-			READ_PROFILE_INT("class",m_iClass);
-
-			m_Profiles.push_back(new CBotProfile(read));
-
-			delete pKVL;
-
+			CBotProfile profile = CBotProfile::parseFromFile(fp);
 			fclose(fp);
+
+			m_Profiles.push_back(new CBotProfile(profile));
 		}
 		else
 		{
@@ -170,16 +195,13 @@ void CBotProfiles :: setupProfiles ()
 
 }
 
-CBotProfile *CBotProfiles :: getDefaultProfile ()
-{
-	if ( m_pDefaultProfile == NULL )
-		CBotGlobals::botMessage(NULL,1,"Error, default profile is NULL (Caused by memory problem, bad initialisation or overwrite) Exiting..");
-
-	return m_pDefaultProfile;
+CBotProfile* CBotProfiles::genRandomProfile(int teamId, int classId, const char *name) {
+	randomProfiles.emplace_back(CBotProfile::genRandom(teamId, classId, name));
+	return &randomProfiles.back();
 }
 
 // return a profile unused by a bot
-CBotProfile *CBotProfiles :: getRandomFreeProfile (int for_team)
+CBotProfile *CBotProfiles :: getRandomFreeProfile (int classFilter, int teamFilter)
 {
 	unsigned int i;
 	dataUnconstArray<int> iList;
@@ -187,7 +209,9 @@ CBotProfile *CBotProfiles :: getRandomFreeProfile (int for_team)
 
 	for ( i = 0; i < m_Profiles.size(); i ++ )
 	{
-		if ( !CBots::findBotByProfile(m_Profiles[i]) && (for_team == -1 || m_Profiles[i]->m_iTeam == -1 || m_Profiles[i]->m_iTeam == for_team) )
+		if ( !CBots::findBotByProfile(m_Profiles[i]) && 
+			 (classFilter == -1 || m_Profiles[i]->m_iClass == -1 || classFilter == m_Profiles[i]->m_iClass) &&
+			 (teamFilter  == -1 || m_Profiles[i]->m_iTeam  == -1 || teamFilter  == m_Profiles[i]->m_iTeam) )
 			iList.Add(i);
 	}
 
@@ -199,6 +223,3 @@ CBotProfile *CBotProfiles :: getRandomFreeProfile (int for_team)
 
 	return found;
 }
-
-	
-

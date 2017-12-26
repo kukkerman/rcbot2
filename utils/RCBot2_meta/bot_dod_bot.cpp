@@ -3484,7 +3484,7 @@ void CDODBot :: modAim ( edict_t *pEntity, Vector &v_origin,
 		if ( pWp->isProjectile() )
 		{
 			if ( CClassInterface::getVelocity(pEntity,&vel) )
-				*v_desired_offset = *v_desired_offset + (vel * randomFloat(m_pProfile->m_fAimSkill-0.1f,m_pProfile->m_fAimSkill+0.1f));
+				*v_desired_offset = *v_desired_offset + (vel * randomFloat(m_pProfile->getAimSkill()-0.1f,m_pProfile->getAimSkill()+0.1f));
 
 			if ( v_origin.z <= getOrigin().z )
 			{

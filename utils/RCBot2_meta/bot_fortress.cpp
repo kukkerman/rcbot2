@@ -3053,7 +3053,7 @@ void CBotTF2::modThink()
 		{
 			// check for spies within radius of bot / use aim skill as a skill factor
 			float fPossibleDistance = (engine->Time() - m_fLastSeeSpyTime) *
-				(m_pProfile->m_fAimSkill * 310.0f) * (m_fCurrentDanger / MAX_BELIEF);
+				(m_pProfile->getAimSkill() * 310.0f) * (m_fCurrentDanger / MAX_BELIEF);
 
 			// increase distance for pyro, he can use flamethrower !
 			if (m_iClass == TF_CLASS_PYRO)
@@ -6689,7 +6689,7 @@ void CBotTF2 :: touchedWpt ( CWaypoint *pWaypoint , int iNextWaypoint, int iPrev
 		{
 			if ( getNavigator()->hasNextPoint() && (getClass() == TF_CLASS_SCOUT) )
 			{
-				if ( randomFloat(0.0f,100.0f) > (m_pProfile->m_fBraveness*10) )
+				if ( randomFloat(0.0f,100.0f) > (m_pProfile->getBraveness()*10) )
 				{
 					float fVel = m_vVelocity.Length();
 
@@ -6767,7 +6767,7 @@ void CBotTF2 :: modAim ( edict_t *pEntity, Vector &v_origin, Vector *v_desired_o
 					if (rcbot_supermode.GetBool())
 						*v_desired_offset = *v_desired_offset + ((vVelocity*fTime));
 					else
-						*v_desired_offset = *v_desired_offset + ((vVelocity*fTime)*m_pProfile->m_fAimSkill);
+						*v_desired_offset = *v_desired_offset + ((vVelocity*fTime)*m_pProfile->getAimSkill());
 
 					if (sv_gravity != NULL)
 						v_desired_offset->z += ((pow(2, fTime) - 1.0f)*(sv_gravity->GetFloat()*0.1f));// - (getOrigin().z - v_origin.z);
@@ -6849,7 +6849,7 @@ void CBotTF2 :: modAim ( edict_t *pEntity, Vector &v_origin, Vector *v_desired_o
 							if ( rcbot_supermode.GetBool() )
 								*v_desired_offset = *v_desired_offset + ((vVelocity*fTime) );
 							else
-								*v_desired_offset = *v_desired_offset + ((vVelocity*fTime)*m_pProfile->m_fAimSkill );
+								*v_desired_offset = *v_desired_offset + ((vVelocity*fTime)*m_pProfile->getAimSkill() );
 						
 							if ( (sv_gravity != NULL) && (pWp->getID() == TF2_WEAPON_GRENADELAUNCHER) )
 								v_desired_offset->z += ((pow(2,fTime)-1.0f)*(sv_gravity->GetFloat()*0.1f));// - (getOrigin().z - v_origin.z);
@@ -7094,7 +7094,7 @@ bool CBotTF2 :: handleAttack ( CBotWeapon *pWeapon, edict_t *pEnemy )
 			else
 			{
 				float fDistFactor = distanceFrom(pEnemy) / pWeapon->getPrimaryMaxRange();
-				float fRandom = randomFloat(m_pProfile->m_fAimSkill, 1.0f);
+				float fRandom = randomFloat(m_pProfile->getAimSkill(), 1.0f);
 				float fSkill = 1.0f - fRandom;
 				
 				m_fSnipeAttackTime = engine->Time() + (fSkill*1.0f) + ((4.0f*fDistFactor)*fSkill);
