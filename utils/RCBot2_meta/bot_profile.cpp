@@ -37,8 +37,8 @@
 #include "bot_navigator.h"
 #include "bot_kv.h"
 
-vector <CBotProfile*> CBotProfiles :: m_Profiles;
-list <CBotProfile> CBotProfiles::randomProfiles;
+std::vector<CBotProfile*> CBotProfiles :: m_Profiles;
+std::list<CBotProfile> CBotProfiles::randomProfiles;
 
 extern ConVar bot_general_difficulty;
 

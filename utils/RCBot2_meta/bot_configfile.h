@@ -36,7 +36,6 @@
 #include "bot_utility.h"
 
 #include <vector>
-using namespace std;
 
 typedef enum
 {
@@ -77,7 +76,7 @@ public:
 
 	static void doNextCommand ();
 private:
-	static vector <char *> m_Commands;
+	static std::vector <char *> m_Commands;
 	static unsigned int m_iCmd; // current command (time delayed)
 	static float m_fNextCommandTime;
 };

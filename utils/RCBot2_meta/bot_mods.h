@@ -54,7 +54,6 @@ class CBotNeuralNet;
 
 #include <vector>
 #include <array>
-using namespace std;
 
 
 /*
@@ -103,7 +102,7 @@ public:
 	static int findAttributeID(const char *szAttrib);
 	static void freeMemory();
 private:
-	static vector<CAttributeID*> attributes;
+	static std::vector<CAttributeID*> attributes;
 };
 
 class CBotMod
@@ -202,8 +201,8 @@ public:
 		return -1;
 	}
 
-	virtual const vector<const char*>& getBotNamesForTeamId(int teamId) const {
-		static const vector<const char*> empty;
+	virtual const std::vector<const char*>& getBotNamesForTeamId(int teamId) const {
+		static const std::vector<const char*> empty;
 		return empty;
 	}
 
@@ -696,7 +695,7 @@ public:
 		return CBotMod::getNameForTeamId(teamId);
 	}
 
-	const vector<const char*>& getBotNamesForTeamId(int teamId) const override {
+	const std::vector<const char*>& getBotNamesForTeamId(int teamId) const override {
 		return botNames[teamId - TEAM_ALLIES];
 	}
 
@@ -751,14 +750,14 @@ protected:
 	static int m_iBombAreaAllies;
 	static int m_iBombAreaAxis;
 
-	static vector<edict_wpt_pair_t> m_BombWaypoints;
-	static vector<edict_wpt_pair_t> m_BreakableWaypoints;
+	static std::vector<edict_wpt_pair_t> m_BombWaypoints;
+	static std::vector<edict_wpt_pair_t> m_BreakableWaypoints;
 
 									// enemy			// team
 	static float fAttackProbLookUp[MAX_DOD_FLAGS+1][MAX_DOD_FLAGS+1];
 
-	static array<vector<const char*>, TEAM_AXIS - TEAM_ALLIES + 1> botNames;
-	static const array<const char*, DOD_CLASS_ROCKET - DOD_CLASS_RIFLEMAN + 1> classNames;
+	static std::array<std::vector<const char*>, TEAM_AXIS - TEAM_ALLIES + 1> botNames;
+	static const std::array<const char*, DOD_CLASS_ROCKET - DOD_CLASS_RIFLEMAN + 1> classNames;
 };
 
 class CDODModDedicated : public CDODMod
@@ -787,9 +786,9 @@ public:
 	//void entitySpawn ( edict_t *pEntity );
 protected:
 	// storing mod specific info
-	vector<edict_t*> m_pHostages;
-	vector<edict_t*> m_pBombPoints;
-	vector<edict_t*> m_pRescuePoints;
+	std::vector<edict_t*> m_pHostages;
+	std::vector<edict_t*> m_pBombPoints;
+	std::vector<edict_t*> m_pRescuePoints;
 };
 
 
@@ -974,7 +973,7 @@ public:
 	int m_iMaxLevel;
 	const char *m_pszClassname;
 	//vector<CAttribute*> m_Attributes;
-	vector<CEconItemAttribute*> m_Attributes;
+	std::vector<CEconItemAttribute*> m_Attributes;
 	//CEconItemView m_ItemView;
 };
 
@@ -1488,7 +1487,7 @@ private:
 	static float m_fNearestTankDistance;
 	static Vector m_vNearestTankLocation;
 	// slots X nine classes
-	static vector<CTF2Loadout*> m_pLoadoutWeapons[TF2_SLOT_MAX][9];
+	static std::vector<CTF2Loadout*> m_pLoadoutWeapons[TF2_SLOT_MAX][9];
 	//static vector<CTF2Loadout*> m_pHats;
 	//static CTF2Loadout *m_StockWeapons[3][9]; //stock weapons
 
@@ -1537,7 +1536,7 @@ public:
 
 	//void entitySpawn ( edict_t *pEntity );
 private:
-	static vector<edict_wpt_pair_t> m_LiftWaypoints;
+	static std::vector<edict_wpt_pair_t> m_LiftWaypoints;
 };
 
 class CHalfLifeDeathmatchModDedicated : public CHalfLifeDeathmatchMod
@@ -1613,7 +1612,7 @@ public:
 	static CBotMod *getMod ( char *szModFolder, char *szSteamFolder );
 
 private:
-	static vector<CBotMod*> m_Mods;
+	static std::vector<CBotMod*> m_Mods;
 };
 
 #endif

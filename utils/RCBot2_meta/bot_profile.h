@@ -5,7 +5,6 @@
 #include <list>
 #include <map>
 #include <string>
-using namespace std;
 
 class CBotProfile {
 private:
@@ -77,8 +76,8 @@ public:
 	static CBotProfile *genRandomProfile(int teamId, int classId, const char *name);
 
 private:
-	static vector <CBotProfile*> m_Profiles;
-	static list <CBotProfile> randomProfiles;
+	static std::vector <CBotProfile*> m_Profiles;
+	static std::list <CBotProfile> randomProfiles;
 };
 
 #endif

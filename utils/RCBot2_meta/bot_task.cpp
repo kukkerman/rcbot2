@@ -49,6 +49,7 @@
 #include "bot_squads.h"
 #include "bot_waypoint_visibility.h"
 
+#include <algorithm>
 
 extern ConVar *sv_gravity;
 // desx and desy must be normalized
@@ -1625,30 +1626,35 @@ void CBotInvestigateTask :: execute (CBot *pBot,CBotSchedule *pSchedule)
 			for ( int i = 0; i < pWaypoint->numPaths(); i ++ )
 				m_InvPoints.push_back(CWaypoints::getWaypoint(pWaypoint->getPath(i))->getOrigin());	
 
-			m_iCurPath = randomInt(0,pWaypoint->numPaths()-1);
+            std::random_shuffle(m_InvPoints.begin(), m_InvPoints.end(), [](int max) { return randomInt(0, max - 1); });
+            m_iCurPath = 0;
 		}
 
 		m_fTime = engine->Time() + m_fMaxTime;
 	}
 
-	if ( m_fTime < engine->Time() )
-		complete();
+    if (m_fTime < engine->Time()) {
+        complete();
+    }
 
-	if ( m_InvPoints.size() > 0 )
+	if (!m_goingTowadInvPoint || m_iCurPath < static_cast<int>(m_InvPoints.size()))
 	{
 		Vector vPoint;
 
-		if ( m_iState == 0 ) // goto inv point
-			vPoint = m_InvPoints[m_iCurPath];
-		else if ( m_iState == 1 ) // goto origin
-			vPoint = m_vOrigin;
+        if (m_goingTowadInvPoint) { // goto inv point
+            vPoint = m_InvPoints[m_iCurPath];
 
-		if ( (pBot->distanceFrom(vPoint) < 80) || ((m_iState==0)&&(pBot->distanceFrom(m_vOrigin)>m_fRadius)) )
+        } else { // goto origin
+            vPoint = m_vOrigin;
+        }
+
+		if ( (pBot->distanceFrom(vPoint) < 80) ||
+             (m_goingTowadInvPoint && pBot->distanceFrom(m_vOrigin) > m_fRadius) )
 		{
-			m_iState = (!m_iState) ? 1 : 0;
-
-			if ( m_iState == 0 )
-				m_iCurPath = randomInt(0,m_InvPoints.size()-1);
+            m_goingTowadInvPoint = !m_goingTowadInvPoint;
+            if (m_goingTowadInvPoint) {
+                m_iCurPath++;
+            }
 		}
 		else
 			pBot->setMoveTo(vPoint);

@@ -56,10 +56,10 @@ int CDODMod::m_iBombAreaAllies = 0;
 int CDODMod::m_iBombAreaAxis = 0;
 //CPerceptron *CDODMod::gNetAttackOrDefend = NULL;
 float CDODMod::fAttackProbLookUp[MAX_DOD_FLAGS+1][MAX_DOD_FLAGS+1];
-vector<edict_wpt_pair_t> CDODMod::m_BombWaypoints;
-vector<edict_wpt_pair_t> CDODMod::m_BreakableWaypoints;
-array<vector<const char*>, TEAM_AXIS - TEAM_ALLIES + 1> CDODMod::botNames;
-const array<const char*, DOD_CLASS_ROCKET - DOD_CLASS_RIFLEMAN + 1> CDODMod::classNames{
+std::vector<edict_wpt_pair_t> CDODMod::m_BombWaypoints;
+std::vector<edict_wpt_pair_t> CDODMod::m_BreakableWaypoints;
+std::array<std::vector<const char*>, TEAM_AXIS - TEAM_ALLIES + 1> CDODMod::botNames;
+const std::array<const char*, DOD_CLASS_ROCKET - DOD_CLASS_RIFLEMAN + 1> CDODMod::classNames{
 	"rifleman",
 	"assault",
 	"support",
@@ -420,7 +420,7 @@ bool CDODFlags::getRandomEnemyControlledFlag ( CBot *pBot, Vector *position, int
 
 bool CDODFlags::getRandomBombToDefuse  ( Vector *position, int iTeam, edict_t **pBombTarget, int *id )
 {
-	vector<int> iPossible;
+	std::vector<int> iPossible;
 	short int j;
 	int selection;
 
@@ -460,7 +460,7 @@ bool CDODFlags::getRandomBombToDefuse  ( Vector *position, int iTeam, edict_t **
 //return random bomb with highest danger
 bool CDODFlags:: getRandomBombToDefend ( CBot *pBot, Vector *position, int iTeam, edict_t **pBombTarget, int *id )
 {
-	vector<int> iPossible;
+	std::vector<int> iPossible;
 	short int j;
 	int selection;
 

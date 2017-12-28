@@ -388,8 +388,8 @@ private:
 
 	CWaypointVisibilityTable *m_pTable;
 	CWaypoint *m_pTarget;
-	vector<int> m_WaypointsI;
-	vector<int> m_WaypointsJ;
+	std::vector<int> m_WaypointsI;
+	std::vector<int> m_WaypointsJ;
 };
 
 
@@ -651,7 +651,7 @@ public:
 		m_fRadius = fRadius;
 		m_fTime = 0; 
 		setCompleteInterrupt(iInterrupt); 
-		m_iState = 0;
+        m_goingTowadInvPoint = true;
 		m_vPOV = vPOV;
 		m_bHasPOV = bHasPOV;
 	}
@@ -663,7 +663,7 @@ public:
 		sprintf(string,"CBotInvestigateTask");
 	}
 private:
-	int m_iState;
+    bool m_goingTowadInvPoint;
 	float m_fTime;
 	float m_fMaxTime;
 	Vector m_vOrigin;
@@ -671,7 +671,7 @@ private:
 	int m_iCurPath;
 	bool m_bHasPOV;
 	Vector m_vPOV;
-	vector<Vector> m_InvPoints; // investigation points (waypoint paths)
+	std::vector<Vector> m_InvPoints; // investigation points (waypoint paths)
 };
 
 class CBotTF2EngiLookAfter : public CBotTask
@@ -979,7 +979,7 @@ public:
 private:
 	Vector m_vOrigin;
 	Vector m_vMoveTo;
-	vector<Vector> m_CheckPoints;
+	std::vector<Vector> m_CheckPoints;
 	unsigned int m_iCurrentCheckPoint;
 	float m_fInvestigateTime;
 	float m_fTime;

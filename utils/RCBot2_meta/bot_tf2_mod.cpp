@@ -94,11 +94,11 @@ bool CTeamFortress2Mod::m_bMVMAlarmSounded = false;
 float CTeamFortress2Mod::m_fMVMCapturePointRadius = 0.0f;
 int CTeamFortress2Mod::m_iCapturePointWptID = -1;
 int CTeamFortress2Mod::m_iFlagPointWptID = -1;
-vector<CTF2Loadout*> CTeamFortress2Mod::m_pLoadoutWeapons[TF2_SLOT_MAX][9]; 
+std::vector<CTF2Loadout*> CTeamFortress2Mod::m_pLoadoutWeapons[TF2_SLOT_MAX][9]; 
 MyEHandle CTeamFortress2Mod::m_pNearestTankBoss = NULL;
 float CTeamFortress2Mod::m_fNearestTankDistance = 0.0f;
 Vector CTeamFortress2Mod::m_vNearestTankLocation = Vector(0, 0, 0);
-vector<CAttributeID*> CAttributeLookup::attributes;
+std::vector<CAttributeID*> CAttributeLookup::attributes;
 extern ConVar bot_use_disp_dist;
 
 CTF2Loadout :: CTF2Loadout ( const char *pszClassname, int iIndex, int iQuality, int iMinLevel, int iMaxLevel )
@@ -612,7 +612,7 @@ void CTeamFortress2Mod :: setupLoadOutWeapons ()
 
 CTF2Loadout *CTeamFortress2Mod::findRandomWeaponLoadOutInSlot(int iclass, int islot)
 {
-	vector<CTF2Loadout*> *list = &(m_pLoadoutWeapons[islot][iclass - 1]);
+	std::vector<CTF2Loadout*> *list = &(m_pLoadoutWeapons[islot][iclass - 1]);
 	CTF2Loadout *weap = NULL;
 
 	if (list->size() == 0)
@@ -620,7 +620,7 @@ CTF2Loadout *CTeamFortress2Mod::findRandomWeaponLoadOutInSlot(int iclass, int is
 
 	if (((islot == TF2_SLOT_PRMRY) || (islot == TF2_SLOT_SCNDR)) && CTeamFortress2Mod::isMedievalMode())
 	{
-		vector<CTF2Loadout*> newlist;
+		std::vector<CTF2Loadout*> newlist;
 		unsigned int _size = list->size();
 
 		// add all medieval weapons
@@ -2012,7 +2012,7 @@ void  CTF2Loadout :: freeMemory ()
 
 void CTeamFortress2Mod::freeMemory()
 {
-	vector<CTF2Loadout*> loadouts_to_free;
+	std::vector<CTF2Loadout*> loadouts_to_free;
 
 	for (unsigned int i = 0; i < TF2_SLOT_MAX; i++)
 	{
