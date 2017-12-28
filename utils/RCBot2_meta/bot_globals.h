@@ -107,6 +107,7 @@ public:
 	static void serverSay ( char *fmt, ... );
 
 	static bool isAlivePlayer ( edict_t *pEntity );
+    static void setAlivePlayer(edict_t *player, bool alive);
 
 	static bool setWaypointDisplayType ( int iType );
 
@@ -173,7 +174,7 @@ public:
 	static int numClients ();
 	static void levelInit();
 
-	static inline void setClientMax ( int iMaxClients ) { m_iMaxClients = iMaxClients; }
+	static void setClientMax ( int iMaxClients );
 
 	static inline void setEventVersion ( int iVersion ){m_iEventVersion = iVersion;}
 
@@ -207,7 +208,7 @@ public:
 	static CBotCommandContainer *m_pCommands;
 
 	static void readRCBotFolder();
-	
+
 private:
 	static eModId m_iCurrentMod;
 	static CBotMod *m_pCurrentMod;
@@ -223,6 +224,7 @@ private:
 	static bool m_bTeamplay;
 	static float m_fMapStartTime;
 	static char *m_szRCBotFolder;
+    static std::vector<bool> m_playerIsAlive;
 
 	/*static Vector m_vForward;
 	static Vector m_vRight;

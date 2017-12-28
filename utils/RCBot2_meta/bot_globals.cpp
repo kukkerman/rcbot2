@@ -69,6 +69,7 @@ int CBotGlobals :: m_iWaypointDisplayType = 0;
 char CBotGlobals :: m_szMapName[MAX_MAP_STRING_LEN];
 bool CBotGlobals :: m_bTeamplay = false;
 char *CBotGlobals :: m_szRCBotFolder = NULL;
+std::vector<bool> CBotGlobals :: m_playerIsAlive;
 
 ///////////
 
@@ -115,9 +116,23 @@ void CBotGlobals :: init ()
 	m_szGameFolder[0] = 0;
 }
 
-bool CBotGlobals ::isAlivePlayer ( edict_t *pEntity )
+void CBotGlobals::setClientMax(int iMaxClients) {
+    m_iMaxClients = iMaxClients;
+    m_playerIsAlive.resize(iMaxClients + 1, false);
+}
+
+bool CBotGlobals::isAlivePlayer ( edict_t *pEntity )
 {
 	return pEntity && ENTINDEX(pEntity) && (ENTINDEX(pEntity) <= gpGlobals->maxClients) && (entityIsAlive(pEntity));
+}
+
+void CBotGlobals::setAlivePlayer(edict_t *player, bool alive) {
+    if (player != nullptr) {
+        const auto pIndex = ENTINDEX(player);
+        if (pIndex > 0 && pIndex <= maxClients()) {
+            m_playerIsAlive[pIndex] = alive;
+        }
+    }
 }
 
 //new map
@@ -585,7 +600,7 @@ bool CBotGlobals :: entityIsAlive ( edict_t *pEntity )
 		if ( !p )
 			return false;
 
-		return (!p->IsDead() && (p->GetHealth()>0));
+		return (!p->IsDead() && (p->GetHealth()>0) && m_playerIsAlive[index]);
 	}
 
 	return ( pEntity->GetIServerEntity() && pEntity->GetClassName() && *pEntity->GetClassName() );

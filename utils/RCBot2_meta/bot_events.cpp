@@ -298,6 +298,8 @@ void CPlayerHurtEvent :: execute ( IBotEventInterface *pEvent )
 
 void CPlayerDeathEvent :: execute ( IBotEventInterface *pEvent )
 {
+    CBotGlobals::setAlivePlayer(m_pActivator, false);
+
 	CBot *pBot = CBots::getBotPointer(m_pActivator);
 	const char *weapon = pEvent->getString("weapon",NULL);
 	CBotSquad *pPrevSquadLeadersSquad = NULL;
@@ -409,6 +411,8 @@ void CWeaponFireEvent :: execute ( IBotEventInterface *pEvent )
 
 void CPlayerSpawnEvent :: execute ( IBotEventInterface *pEvent )
 {
+    CBotGlobals::setAlivePlayer(m_pActivator, true);
+
 	CBot *pBot = CBots::getBotPointer(m_pActivator);
 
 	if ( pBot )
