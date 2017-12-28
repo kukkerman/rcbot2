@@ -33,8 +33,7 @@
 
 #include "bot_const.h"
 
-#include <vector>
-using namespace std;
+#include <unordered_map>
 
 class CBotEventInterface;
 class IBotEventInterface;
@@ -766,6 +765,6 @@ public:
 	static void addEvent ( CBotEvent *pEvent );
 
 private:
-	static vector<CBotEvent*> m_theEvents;
+    static std::unordered_map<std::string, CBotEvent*> m_allEvents;
 };
 #endif

@@ -46,7 +46,7 @@
 #include "bot_schedule.h"
 #include "bot_waypoint_locations.h"
 
-vector<CBotEvent*> CBotEvents :: m_theEvents;
+std::unordered_map<std::string, CBotEvent*> CBotEvents :: m_allEvents;
 extern ConVar bot_use_vc_commands;
 ///////////////////////////////////////////////////////
 
@@ -1270,61 +1270,53 @@ void CBotEvents :: addEvent ( CBotEvent *pEvent )
 	//if ( gameeventmanager )
 	//	gameeventmanager->AddListener( g_RCBotPluginMeta.getEventListener(), pEvent->getName(), true );
 
-	m_theEvents.push_back(pEvent);
+    m_allEvents[pEvent->getName()] = pEvent;
+	//m_theEvents.push_back(pEvent);
 }
 
 void CBotEvents :: freeMemory ()
 {
+    for (const auto &evt : m_allEvents) {
+        delete evt.second;
+    }
+    m_allEvents.clear();
+
+    /*
 	for ( unsigned int i = 0; i < m_theEvents.size(); i ++ )
 	{
 		delete m_theEvents[i];
 		m_theEvents[i] = NULL;	
 	}
 	m_theEvents.clear();
+    */
 }
 
 void CBotEvents :: executeEvent( void *pEvent, eBotEventType iType )
 {
-	CBotEvent *pFound;
-	int iEventId = -1; 
-	bool bFound;
+	IBotEventInterface *pInterface = nullptr;
+    if (iType == TYPE_KEYVALUES) {
+        pInterface = new CGameEventInterface1((KeyValues*)pEvent);
 
-	IBotEventInterface *pInterface = NULL;
+    } else if (iType == TYPE_IGAMEEVENT) {
+        pInterface = new CGameEventInterface2((IGameEvent*)pEvent);
 
-	if ( iType == TYPE_KEYVALUES )
-		pInterface = new CGameEventInterface1((KeyValues*)pEvent);
-	else if ( iType == TYPE_IGAMEEVENT )
-		pInterface = new CGameEventInterface2((IGameEvent*)pEvent);
+    } else {
+        return;
+    }
+    
+    const auto iEventId = (iType != TYPE_IGAMEEVENT) ? pInterface->getInt("eventid") : -1;
 
-	if ( pInterface == NULL )
-		return;
-
-	if ( iType != TYPE_IGAMEEVENT )
-		iEventId = pInterface->getInt("eventid");
-
-	for ( register unsigned short int i = 0; i < m_theEvents.size(); i ++ )
-	{
-		pFound = m_theEvents[i];
-
-		// if it has an pEvent id stored just check that
-		//if ( ( iType != TYPE_IGAMEEVENT ) && pFound->hasEventId() )
-		//	bFound = pFound->isEventId(iEventId);
-		//else
-		bFound = pFound->forCurrentMod() && pFound->isType(pInterface->getName());
-
-		if ( bFound )	
-		{
-			int userid = pInterface->getInt("userid",-1);
-			// set pEvent id for quick checking
-			pFound->setEventId(iEventId);
-
-			pFound->setActivator((userid>=0)?CBotGlobals::playerByUserId(userid):NULL);
-
-			pFound->execute(pInterface);
-
-			break;
-		}
-	}
+    const auto botEventIter = m_allEvents.find(pInterface->getName());
+    if (botEventIter != m_allEvents.cend()) {
+        auto botEvent = botEventIter->second;
+        if (botEvent->forCurrentMod()) {
+            const auto userid = pInterface->getInt("userid", -1);
+            // set pEvent id for quick checking
+            botEvent->setEventId(iEventId);
+            botEvent->setActivator((userid >= 0) ? CBotGlobals::playerByUserId(userid) : NULL);
+            botEvent->execute(pInterface);
+        }
+    }
 
 	delete pInterface;
 }
