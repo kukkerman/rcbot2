@@ -114,7 +114,7 @@ public:
 
 	void addTask( CBotTask *pTask );
 
-	void execute ( CBot *pBot );
+	virtual void execute ( CBot *pBot );
 
 	const char *getIDString ();
 
@@ -168,6 +168,8 @@ public:
 
 	inline void setID ( eBotSchedule iId ) { m_iSchedId = iId; }
 
+protected:
+    inline void fail() { m_bFailed = true; }
 
 private:
     dataQueue <CBotTask*> m_Tasks;
@@ -665,5 +667,15 @@ public:
 	}
 };
 
+class CBotDODBombSched : public CBotSchedule {
+public:
+    CBotDODBombSched(int type, edict_t *bombTarget, CWaypoint *investigateWpt = nullptr);
+
+    void execute(CBot *pBot) override;
+
+private:
+    edict_t *bombTarget;
+    int bombId;
+};
 
 #endif

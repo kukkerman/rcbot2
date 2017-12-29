@@ -2522,32 +2522,23 @@ bool CDODBot :: executeAction ( CBotUtility *util )
 				iBombType = DOD_BOMB_PLANT;
 			}
 
-
 			int iWptGoal = CDODMod::m_Flags.getWaypointAtFlag(id);
-	
 			if ( iWptGoal == -1 )
 				return false;
 
-			CWaypoint *pWaypoint;
+			const auto pWaypoint = distanceFrom(vGoal) > 1024.0f ? 
+                CWaypoints::getPinchPointFromWaypoint(vGoal, vGoal) : // outside waypoint bucket of goal
+                CWaypoints::getPinchPointFromWaypoint(getOrigin(), vGoal);
 
-			if ( distanceFrom(vGoal) > 1024 ) // outside waypoint bucket of goal
-				pWaypoint = CWaypoints::getPinchPointFromWaypoint(vGoal,vGoal);
-			else
-				pWaypoint = CWaypoints::getPinchPointFromWaypoint(getOrigin(),vGoal);
+            const auto shouldInvestigate =
+                pWaypoint &&
+                iBombType == DOD_BOMB_PLANT &&
+                randomFloat(0.0f, 200.0f) < m_pNavigator->getBelief(CWaypoints::getWaypointIndex(pWaypoint));
 
-			CBotSchedule *attack = new CBotSchedule();
-
-			attack->setID(SCHED_BOMB);
-
-			if ( pWaypoint && (iBombType == DOD_BOMB_PLANT) && (randomFloat(0.0f,200.0f) < m_pNavigator->getBelief(CWaypoints::getWaypointIndex(pWaypoint))) )
-			{
-				attack->addTask(new CFindPathTask(pWaypoint->getOrigin()));
-				attack->addTask(new CBotInvestigateTask(pWaypoint->getOrigin(),250,Vector(0,0,0),false,randomFloat(3.0f,5.0f),CONDITION_SEE_CUR_ENEMY));
-			}
-			attack->addTask(new CFindPathTask(iWptGoal));
-			attack->addTask(new CBotDODBomb(iBombType,id,pBombTarget,vGoal,-1));
-			// add defend task
-			m_pSchedules->add(attack);
+            m_pSchedules->add(new CBotDODBombSched(
+                iBombType,
+                pBombTarget,
+                shouldInvestigate ? pWaypoint : nullptr));
 
 			if ( iBombType == DOD_BOMB_DEFUSE ) 
 				updateCondition(CONDITION_RUN);
@@ -3223,7 +3214,7 @@ void CDODBot :: getTasks (unsigned int iIgnore)
 			fDefendUtil *= 2.0f;
 		}
 
-		ADD_UTILITY(BOT_UTIL_PLANT_BOMB,m_bHasBomb && (iNumBombsToPlant>0),fPlantUtil );
+        ADD_UTILITY(BOT_UTIL_PLANT_BOMB, m_bHasBomb && (iNumBombsToPlant > 0), fPlantUtil);
 		ADD_UTILITY(BOT_UTIL_DEFUSE_BOMB,(iNumBombsToDefuse>0), fDefuseBombUtil);
 		ADD_UTILITY(BOT_UTIL_DEFEND_BOMB,(iNumBombsToDefend>0), fDefendBombUtil);
 

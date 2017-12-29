@@ -874,3 +874,37 @@ void CBotSchedule :: passEdict(edict_t *p)
 	m_bitsPass |= BITS_SCHED_PASS_EDICT;
 }
 ////////////////////
+
+CBotDODBombSched::CBotDODBombSched(int type, edict_t *bombTarget, CWaypoint *investigateWpt) :
+    bombTarget(bombTarget),
+    bombId(CDODMod::m_Flags.getBombID(bombTarget)) {
+
+    setID(SCHED_BOMB);
+
+    if (investigateWpt != nullptr) {
+        addTask(new CFindPathTask(investigateWpt->getOrigin()));
+        addTask(new CBotInvestigateTask(
+            investigateWpt->getOrigin(),
+            250.0f,
+            Vector(0.0f, 0.0f, 0.0f),
+            false,
+            randomFloat(3.0f, 5.0f),
+            CONDITION_SEE_CUR_ENEMY));
+    }
+
+    const auto bombWptIndex = CDODMod::m_Flags.getWaypointAtFlag(bombId);
+    addTask(new CFindPathTask(bombWptIndex));
+
+    const auto bombOrigin = CBotGlobals::entityOrigin(bombTarget);
+    addTask(new CBotDODBomb(type, bombId, bombTarget, bombOrigin, -1));
+}
+
+void CBotDODBombSched::execute(CBot *pBot) {
+    auto dodBot = dynamic_cast<CDODBot*>(pBot);
+    if (!dodBot->hasBomb() || !CDODMod::m_Flags.canPlantBomb(dodBot->getTeam(), bombId)) {
+        fail();
+
+    } else {
+        CBotSchedule::execute(pBot);
+    }
+}

@@ -445,17 +445,16 @@ void CBotDODBomb :: execute (CBot *pBot,CBotSchedule *pSchedule)
 
 	if ( m_iType == DOD_BOMB_PLANT) 
 	{
-		bWorking = CClassInterface::isPlayerPlantingBomb_DOD(pBot->getEdict());
+        bWorking = CClassInterface::isPlayerPlantingBomb_DOD(pBot->getEdict());
 
-		if ( CDODMod::m_Flags.isBombPlanted(m_iBombID) )
-		{
-			complete();
-		}
-		else if ( CDODMod::m_Flags.isTeamMatePlanting(pBot->getEdict(),pBot->getTeam(),m_iBombID) )
-			complete(); // team mate doing my job
-			
-		//else if ( !CClassInterface::isPlayerPlantingBomb_DOD(pBot->getEdict()) )// it is still planted
-		//	complete(); // bomb is being defused by someone else - give up
+        if (CDODMod::m_Flags.isBombPlanted(m_iBombID))
+        {
+            complete();
+        } else if (CDODMod::m_Flags.isTeamMatePlanting(pBot->getEdict(), pBot->getTeam(), m_iBombID))
+            complete(); // team mate doing my job
+
+        //else if ( !CClassInterface::isPlayerPlantingBomb_DOD(pBot->getEdict()) )// it is still planted
+        //	complete(); // bomb is being defused by someone else - give up
 	}
 	else if ( m_iType == DOD_BOMB_DEFUSE)
 	{
@@ -1626,7 +1625,8 @@ void CBotInvestigateTask :: execute (CBot *pBot,CBotSchedule *pSchedule)
 			for ( int i = 0; i < pWaypoint->numPaths(); i ++ )
 				m_InvPoints.push_back(CWaypoints::getWaypoint(pWaypoint->getPath(i))->getOrigin());	
 
-            std::random_shuffle(m_InvPoints.begin(), m_InvPoints.end(), [](int max) { return randomInt(0, max - 1); });
+            const auto randomFunc = [](int max) { return randomInt(0, max - 1); };
+            std::random_shuffle(m_InvPoints.begin(), m_InvPoints.end(), randomFunc);
             m_iCurPath = 0;
 		}
 
