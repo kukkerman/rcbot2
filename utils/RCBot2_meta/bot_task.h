@@ -80,7 +80,7 @@ class CBotTask
 {
 public:	
 	CBotTask();	
-	~CBotTask()
+	virtual ~CBotTask()
 	{
 		if ( m_pInterruptFunc!=NULL )
 		{

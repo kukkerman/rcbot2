@@ -91,6 +91,284 @@ const char *szSchedules[SCHED_MAX+1] =
 	"SCHED_TAUNT",
 	"SCHED_MAX"
 };
+
+CBotSchedule::CBotSchedule() :
+    m_bFailed(false),
+    m_bitsPass(0),
+    m_iSchedId(SCHED_NONE),
+    iPass(0),
+    fPass(0.0f),
+    vPass(0.0f, 0.0f, 0.0f),
+    pPass(nullptr) { }
+
+CBotSchedule::CBotSchedule(CBotTask *pTask) :
+    CBotSchedule() {
+    
+    addTask(pTask);
+}
+
+CBotSchedule::~CBotSchedule() {
+    freeMemory();
+}
+
+void CBotSchedule::init() { }
+
+void CBotSchedule::addTask(CBotTask *pTask) {
+    if (pTask != nullptr) {
+        pTask->init();
+        tasks.push_back(pTask);
+    }
+}
+
+void CBotSchedule::execute(CBot *pBot) {
+    if (tasks.empty()) {
+        m_bFailed = true;
+        return;
+    }
+
+    auto pTask = tasks.front();
+    if (pTask == nullptr) {
+        m_bFailed = true;
+        return;
+    }
+
+    auto iState = pTask->isInterrupted(pBot);
+    if (iState == STATE_FAIL) {
+        pTask->fail();
+
+    } else if (iState == STATE_COMPLETE) {
+        pTask->complete();
+
+    } else { // still running
+
+        // timed out ??
+        if (pTask->timedOut()) {
+            pTask->fail(); // fail
+
+        } else {
+            if (CClients::clientsDebugging(BOT_DEBUG_TASK)) {
+                char dbg[512];
+                pTask->debugString(dbg);
+                CClients::clientDebugMsg(BOT_DEBUG_TASK, dbg, pBot);
+            }
+
+            pTask->execute(pBot, this); // run
+        }
+    }
+
+    if (pTask->hasFailed()) {
+        m_bFailed = true;
+
+    } else if (pTask->isComplete()) {
+        removeTop();
+    }
+}
+
+const char *CBotSchedule::getIDString() {
+    return szSchedules[m_iSchedId];
+}
+
+CBotTask* CBotSchedule::currentTask() const {
+    if (!tasks.empty()) {
+        return tasks.front();
+    }
+
+    return nullptr;
+}
+
+bool CBotSchedule::hasFailed() const {
+    return m_bFailed;
+}
+
+bool CBotSchedule::isComplete() const {
+    return tasks.empty();
+}
+
+void CBotSchedule::freeMemory() {
+    for (auto task : tasks) {
+        delete task;
+    }
+    tasks.clear();
+}
+
+void CBotSchedule::removeTop() {
+    if (!tasks.empty()) {
+        auto topTask = tasks.front();
+        tasks.pop_front();
+
+        delete topTask;
+    }
+}
+
+void CBotSchedule::clearPass() {
+    m_bitsPass = 0;
+}
+
+void CBotSchedule::passInt(int i) {
+    iPass = i;
+    m_bitsPass |= BITS_SCHED_PASS_INT;
+}
+
+void CBotSchedule::passFloat(float f) {
+    fPass = f;
+    m_bitsPass |= BITS_SCHED_PASS_FLOAT;
+}
+
+void CBotSchedule::passVector(Vector v) {
+    vPass = v;
+    m_bitsPass |= BITS_SCHED_PASS_VECTOR;
+}
+
+void CBotSchedule::passEdict(edict_t *p) {
+    pPass = p;
+    m_bitsPass |= BITS_SCHED_PASS_EDICT;
+}
+
+bool CBotSchedule::hasPassInfo() const {
+    return (m_bitsPass != 0);
+}
+
+int CBotSchedule::passedInt() const {
+    return iPass;
+}
+
+float CBotSchedule::passedFloat() const {
+    return fPass;
+}
+
+Vector CBotSchedule::passedVector() const {
+    return vPass;
+}
+
+edict_t* CBotSchedule::passedEdict() const {
+    return pPass;
+}
+
+bool CBotSchedule::isID(eBotSchedule iId) const {
+    return m_iSchedId == iId;
+}
+
+bool CBotSchedule::hasPassInt() const {
+    return (m_bitsPass & BITS_SCHED_PASS_INT) > 0;
+}
+
+bool CBotSchedule::hasPassFloat() const {
+    return (m_bitsPass & BITS_SCHED_PASS_FLOAT) > 0;
+}
+
+bool CBotSchedule::hasPassVector() const {
+    return (m_bitsPass & BITS_SCHED_PASS_VECTOR) > 0;
+}
+bool CBotSchedule::hasPassEdict() const {
+    return (m_bitsPass & BITS_SCHED_PASS_EDICT) > 0;
+}
+
+eBotSchedule CBotSchedule::getID() const {
+    return m_iSchedId;
+}
+
+void CBotSchedule::setID(eBotSchedule iId) {
+    m_iSchedId = iId;
+}
+
+void CBotSchedule::fail() {
+    m_bFailed = true;
+}
+
+CBotSchedules::~CBotSchedules() {
+    freeMemory();
+}
+
+bool CBotSchedules::hasSchedule(eBotSchedule iSchedule) const {
+    return std::find_if(
+        schedules.cbegin(), schedules.cend(),
+        [iSchedule](CBotSchedule *sched) { return sched->isID(iSchedule); }) != schedules.cend();
+}
+
+bool CBotSchedules::isCurrentSchedule(eBotSchedule iSchedule) const {
+    return !schedules.empty() && schedules.front()->isID(iSchedule);
+}
+
+void CBotSchedules::removeSchedule(eBotSchedule iSchedule) {
+    const auto schedToRemove = std::find_if(
+        schedules.cbegin(), schedules.cend(),
+        [iSchedule](CBotSchedule *sched) { return sched->isID(iSchedule); });
+
+    if (schedToRemove != schedules.cend()) {
+        schedules.erase(schedToRemove);
+    }
+}
+
+void CBotSchedules::execute(CBot *pBot) {
+    if (isEmpty()) {
+        return;
+    }
+
+    auto currentSched = schedules.front();
+    static CBotSchedule *prevSched = nullptr;
+    if (prevSched != currentSched) {
+        Msg("Executing schedule %s\n", currentSched->getIDString());
+        prevSched = currentSched;
+    }
+
+    currentSched->execute(pBot);
+
+    if (currentSched->isComplete() || currentSched->hasFailed()) {
+        removeTop();
+    }
+}
+
+void CBotSchedules::removeTop() {
+    if (!isEmpty()) {
+        auto topSched = schedules.front();
+        schedules.pop_front();
+
+        topSched->freeMemory();
+        delete topSched;
+    }
+}
+
+void CBotSchedules::freeMemory() {
+    for (auto sched : schedules) {
+        sched->freeMemory();
+        delete sched;
+    }
+    schedules.clear();
+}
+
+void CBotSchedules::add(CBotSchedule *pSchedule) {
+    pSchedule->init();
+    schedules.push_back(pSchedule);
+}
+
+void CBotSchedules::addFront(CBotSchedule *pSchedule) {
+    pSchedule->init();
+    schedules.push_front(pSchedule);
+}
+
+bool CBotSchedules::isEmpty() const {
+    return schedules.empty();
+}
+
+CBotTask* CBotSchedules::getCurrentTask() const {
+    if (!isEmpty()) {
+        const auto currentSched = getCurrentSchedule();
+        if (currentSched != nullptr) {
+            return currentSched->currentTask();
+        }
+    }
+
+    return nullptr;
+}
+
+CBotSchedule* CBotSchedules::getCurrentSchedule() const {
+    if (!isEmpty()) {
+        return schedules.front();
+    }
+
+    return nullptr;
+}
+
 ////////////////////// unused
 CBotTF2DemoPipeEnemySched :: CBotTF2DemoPipeEnemySched ( CBotWeapon *pLauncher, Vector vStand, edict_t *pEnemy )
 {
@@ -752,130 +1030,7 @@ void CBotDefendPointSched ::init ()
 }
 
 
-/////////////////////////////////////////////
-void CBotSchedule :: execute ( CBot *pBot )
-{
-	// current task
-	static CBotTask *pTask;
-	static eTaskState iState;
-
-	if ( m_Tasks.IsEmpty() )
-	{
-		m_bFailed = true;
-		return;
-	}
-
-	pTask = m_Tasks.GetFrontInfo();
-
-	if ( pTask == NULL )
-	{
-		m_bFailed = true;
-		return;
-	}
-
-	iState = pTask->isInterrupted(pBot);
-
-	if ( iState == STATE_FAIL )
-		pTask->fail();
-	else if ( iState == STATE_COMPLETE )
-		pTask->complete();
-	else // still running
-	{
-		// timed out ??
-		if ( pTask->timedOut() )
-			pTask->fail(); // fail
-		else
-		{			
-			if ( CClients::clientsDebugging(BOT_DEBUG_TASK) )
-			{
-				char dbg[512];
-
-				pTask->debugString(dbg);
-
-				CClients::clientDebugMsg(BOT_DEBUG_TASK,dbg,pBot);
-			}
-
-			pTask->execute(pBot,this); // run
-		}
-	}
-
-	if ( pTask->hasFailed() )
-	{
-		m_bFailed = true;
-	}
-	else if ( pTask->isComplete() )
-	{
-		removeTop();
-	}
-}
-
-void CBotSchedule :: addTask ( CBotTask *pTask )
-{
-	// initialize
-	pTask->init();
-    // add
-	m_Tasks.Add(pTask);
-}
-
-void CBotSchedule :: removeTop ()
-{
-	CBotTask *pTask = m_Tasks.GetFrontInfo();
-
-	m_Tasks.RemoveFront();
-
-	delete pTask;
-}
-
-const char *CBotSchedule :: getIDString ()
-{
-	return szSchedules[m_iSchedId];
-}
-
-/////////////////////
-
-CBotSchedule :: CBotSchedule ()
-{
-	_init();
-}
-
-void CBotSchedule :: _init ()
-{
-	m_bFailed = false;
-	m_bitsPass = 0;		
-	m_iSchedId = SCHED_NONE;
-
-	// pass information
-	iPass = 0;
-	fPass = 0;
-	vPass = Vector(0,0,0);
-	pPass = 0;	
-
-	init();
-}
-
-void CBotSchedule :: passInt(int i)
-{
-	iPass = i;
-	m_bitsPass |= BITS_SCHED_PASS_INT;
-}
-void CBotSchedule :: passFloat(float f)
-{
-	fPass = f;
-	m_bitsPass |= BITS_SCHED_PASS_FLOAT;
-}
-void CBotSchedule :: passVector(Vector v)
-{
-	vPass = v;
-	m_bitsPass |= BITS_SCHED_PASS_VECTOR;
-}
-void CBotSchedule :: passEdict(edict_t *p)
-{
-	pPass = p;
-	m_bitsPass |= BITS_SCHED_PASS_EDICT;
-}
-////////////////////
-
-CBotDODBombSched::CBotDODBombSched(int type, edict_t *bombTarget, CWaypoint *investigateWpt) :
+CBotDODBombSched::CBotDODBombSched(int type, edict_t *bombTarget,  CWaypoint *investigateWpt) :
     bombTarget(bombTarget),
     bombId(CDODMod::m_Flags.getBombID(bombTarget)) {
 
@@ -902,6 +1057,7 @@ CBotDODBombSched::CBotDODBombSched(int type, edict_t *bombTarget, CWaypoint *inv
 void CBotDODBombSched::execute(CBot *pBot) {
     auto dodBot = dynamic_cast<CDODBot*>(pBot);
     if (!dodBot->hasBomb() || !CDODMod::m_Flags.canPlantBomb(dodBot->getTeam(), bombId)) {
+        Msg("Schedule failed. (has bomb: %d can plant: %d)\n", dodBot->hasBomb(), CDODMod::m_Flags.canPlantBomb(dodBot->getTeam(), bombId));
         fail();
 
     } else {
