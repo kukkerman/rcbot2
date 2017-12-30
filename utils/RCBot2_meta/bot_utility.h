@@ -156,65 +156,37 @@ extern const char *g_szUtils[BOT_UTIL_MAX+1];
 class CBotUtility
 {
 public:
-	CBotUtility ( CBot *pBot, eBotAction id, bool bCanDo, float fUtil, CBotWeapon *pWeapon = NULL, int iData = 0, Vector vec = Vector(0,0,0) );
-
-	inline float getUtility () { return m_fUtility; }
-
-	inline eBotAction getId () { return m_id; }
-
-	inline bool canDo () { return m_bCanDo; }
-
-	inline CBotWeapon *getWeaponChoice () { return m_pWeapon; }
-
-	inline int getIntData () { return m_iData; }
-
-	inline Vector getVectorData () { return m_vVector; }
+    CBotUtility(CBot *pBot, eBotAction id, bool bCanDo, float fUtil, CBotWeapon *pWeapon = nullptr, int iData = 0, Vector vec = Vector(0, 0, 0));
+    float getUtility() const;
+    eBotAction getId() const;
+    bool canDo() const;
+    CBotWeapon *getWeaponChoice() const;
+    int getIntData() const;
+    Vector getVectorData() const;
 
 private:
+    CBot *m_pBot;
+    eBotAction m_id;
+    bool m_bCanDo;
+    float m_fUtility;
+    CBotWeapon *m_pWeapon;
 	int m_iData;
-	float m_fUtility;
-	bool m_bCanDo;
-	eBotAction m_id;
-	CBot *m_pBot;
-	CBotWeapon *m_pWeapon;
 	Vector m_vVector;
 };
 
-
-typedef struct util_node_s
-{
-  CBotUtility *util;
-  struct util_node_s *next;
-}util_node_t;
-
-
-typedef struct
-{
-	util_node_t *head;
-}util_list;
-
-class CBotUtilities
-{
+class CBotUtilities {
 public:
+    void freeMemory();
+    void addUtility(CBotUtility p);
+	void execute();
 
-	CBotUtilities ()
-	{
-		m_pBest.head = NULL;
-	}
-
-	void freeMemory ();
-
-	inline void addUtility ( CBotUtility p ) { if ( p.canDo() ) { m_Utilities.push_back(p); } }
-
-	void execute ();
-
-	CBotUtility *nextBest ();
+    CBotUtility* nextBest();
 
 private:
-	std::vector<CBotUtility> m_Utilities;
-
-	util_list m_pBest;
+    std::vector<CBotUtility> utilities;
+    std::vector<CBotUtility>::iterator best;
 };
+
 #define ADD_UTILITY_WEAPON_DATA_VECTOR(utilname,condition,utility,weapon,data,vector) if ( m_fUtilTimes[utilname] < engine->Time()) { if ( condition ) { utils.addUtility(CBotUtility(this,utilname,true,utility,weapon,data,vector)); } }
 #define ADD_UTILITY_DATA_VECTOR(utilname,condition,utility,data,vector) if ( m_fUtilTimes[utilname] < engine->Time()) { if ( condition ) { utils.addUtility(CBotUtility(this,utilname,true,utility,NULL,data,vector)); } }
 #define ADD_UTILITY_WEAPON_DATA(utilname,condition,utility,weapon,data) if ( m_fUtilTimes[utilname] < engine->Time()) { if ( condition ) { utils.addUtility(CBotUtility(this,utilname,true,utility,weapon,data)); } }
