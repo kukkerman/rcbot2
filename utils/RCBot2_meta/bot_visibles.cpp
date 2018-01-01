@@ -70,6 +70,12 @@ void CFindEnemyFunc :: execute ( edict_t *pEntity )
 {
 	if ( m_pBot->isEnemy(pEntity) )
 	{
+        const auto entIndex = ENTINDEX(pEntity);
+        if (entIndex <= gpGlobals->maxClients) {
+            if (!m_pBot->isPlayerTargetable(entIndex)) {
+                return;
+            }
+        }
 		float fFactor = getFactor(pEntity);
 
 		if ( !m_pBest || (fFactor < m_fBestFactor) )
@@ -300,6 +306,10 @@ void CBotVisibles :: updateVisibles ()
 				checkVisible(pEntity,&iTicks,&bVisible,m_iCurPlayer);
 				setVisible(pEntity,bVisible);
 				m_pBot->setVisible(pEntity,bVisible);
+
+                if (bVisible) {
+                    m_pBot->setPlayerLastSeen(m_iCurPlayer);
+                }
 			}
 		}
 

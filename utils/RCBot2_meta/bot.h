@@ -64,6 +64,7 @@
 #include "bot_const.h"
 #include "bot_ehandle.h"
 #include <queue>
+#include <unordered_map>
 
 #define MAX_AMMO_TYPES 32
 #define MAX_VOICE_CMDS 32
@@ -907,6 +908,9 @@ public:
 
 	bool recentlySpawned ( float fTime );
 
+    void setPlayerLastSeen(int playerId);
+    bool isPlayerTargetable(int playerId) const;
+
 protected:
 
 	inline void setLookAt ( Vector vNew )
@@ -1025,6 +1029,8 @@ protected:
 	////////////////////////////////////
 	MyEHandle m_pEnemy; // current enemy
 	MyEHandle m_pOldEnemy;
+    std::vector<float> m_vPlayerLastSeenTime;
+    std::vector<float> m_vPlayerTargetableTime;
 	Vector m_vLastSeeEnemy;
 	Vector m_vLastSeeEnemyBlastWaypoint;
 	MyEHandle m_pLastEnemy; // enemy we were fighting before we lost it

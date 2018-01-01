@@ -1135,6 +1135,9 @@ void CBot :: init (bool bVarInit)
 	m_bOpenFire = true;
 	m_pSquad = NULL;
 
+    m_vPlayerLastSeenTime.resize(gpGlobals->maxClients + 1);
+    m_vPlayerTargetableTime.resize(gpGlobals->maxClients + 1);
+
 	cmd.command_number = 0;
 
 	if ( bVarInit )
@@ -1439,7 +1442,11 @@ void CBot :: spawnInit ()
 	m_vHurtOrigin = Vector(0,0,0);
 
 	m_pOldEnemy = NULL;
-	m_pEnemy = NULL;	
+	m_pEnemy = NULL;
+
+    std::fill(m_vPlayerLastSeenTime.begin(), m_vPlayerLastSeenTime.end(), -1.0f);
+    std::fill(m_vPlayerTargetableTime.begin(), m_vPlayerTargetableTime.end(), -1.0f);
+    
 
 	m_vLastSeeEnemy = Vector(0,0,0);
 	m_pLastEnemy = NULL; // enemy we were fighting before we lost it
@@ -1686,9 +1693,8 @@ void CBot :: findEnemy ( edict_t *pOldEnemy )
 			m_vLastSeeEnemyBlastWaypoint = pWpt->getOrigin();
 	}*/
 
-	m_pVisibles->eachVisible(m_pFindEnemyFunc);
-
-	m_pEnemy = m_pFindEnemyFunc->getBestEnemy();
+    m_pVisibles->eachVisible(m_pFindEnemyFunc);
+    m_pEnemy = m_pFindEnemyFunc->getBestEnemy();
 
 	if ( m_pEnemy && (m_pEnemy != pOldEnemy) )
 	{
@@ -3038,6 +3044,25 @@ void CBot :: getTasks (unsigned int iIgnore)
 		m_pSchedules->add(new CBotGotoOriginSched(pWaypoint->getOrigin()));
 	}
 
+}
+
+void CBot::setPlayerLastSeen(int playerId) {
+    extern ConVar rcbot_supermode;
+
+    static constexpr auto rememberTime = 1.0f;
+    static constexpr auto minReactionTime = 0.2f;
+    static constexpr auto maxReactionTime = 0.4f;
+
+    const auto currentTime = engine->Time();
+    if (currentTime - m_vPlayerLastSeenTime[playerId] > rememberTime) {
+        const auto reactionTime = rcbot_supermode.GetBool() ? 0.0f : randomFloat(minReactionTime, maxReactionTime);
+        m_vPlayerTargetableTime[playerId] = currentTime + reactionTime;
+    }
+    m_vPlayerLastSeenTime[playerId] = currentTime;
+}
+
+bool CBot::isPlayerTargetable(int playerId) const {
+    return m_vPlayerTargetableTime[playerId] <= engine->Time();
 }
 
 ///////////////////////
