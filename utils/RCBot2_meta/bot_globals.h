@@ -82,7 +82,7 @@ public:
 	// add a directory delimiter to the string like '/' (linux) or '\\' (windows) or
 	static void addDirectoryDelimiter ( char *szString );
 	// print a message to client pEntity with bot formatting
-	static void botMessage ( edict_t *pEntity, int iErr, char *fmt, ... );	
+	static void botMessage ( edict_t *pEntity, int iErr, const char *fmt, ... );	
 	
 	static void fixFloatAngle ( float *fAngle );
 
@@ -186,9 +186,9 @@ public:
 
 	static inline bool isMod ( eModId iMod ) { 	return m_iCurrentMod == iMod; }
 
-	static inline char *gameFolder (){return m_szGameFolder;}
+	static inline const char *gameFolder (){return m_szGameFolder;}
 
-	static inline char *modFolder (){return m_szModFolder;}
+	static inline const char *modFolder (){return m_szModFolder;}
 
 	static inline int maxClients () {return m_iMaxClients;}
 
@@ -212,8 +212,8 @@ public:
 private:
 	static eModId m_iCurrentMod;
 	static CBotMod *m_pCurrentMod;
-	static char *m_szModFolder;
-	static char *m_szGameFolder;
+	static const char *m_szModFolder;
+	static const char *m_szGameFolder;
 	static char m_szMapName[MAX_MAP_STRING_LEN];
 	static int m_iDebugLevels;
 	static bool m_bMapRunning;
@@ -223,7 +223,7 @@ private:
 	static int m_iWaypointDisplayType;
 	static bool m_bTeamplay;
 	static float m_fMapStartTime;
-	static char *m_szRCBotFolder;
+	static const char *m_szRCBotFolder;
     static std::vector<bool> m_playerIsAlive;
 
 	/*static Vector m_vForward;

@@ -46,8 +46,8 @@ public:
 	float getAimSkill() const;
 
 	// bot's name
-	char *m_szName = DEFAULT_BOT_NAME;
-	char *m_szModel = "default";
+	const char *m_szName = DEFAULT_BOT_NAME;
+	const char *m_szModel = "default";
 	// bot's team
 	int m_iTeam = -1;					// preferred player team
 	int m_iClass = -1;					// preferred player class

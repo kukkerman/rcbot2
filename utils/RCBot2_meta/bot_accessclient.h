@@ -49,11 +49,11 @@ public:
 
 	bool forBot ();
 
-	inline char *getSteamID () { return m_szSteamId; }
+	inline const char *getSteamID () { return m_szSteamId; }
 
 	inline int getAccessLevel () { return m_iAccessLevel; }
 private:
-	char *m_szSteamId;
+	const char *m_szSteamId;
 	int m_iAccessLevel;
 };
 

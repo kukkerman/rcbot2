@@ -88,7 +88,7 @@ public:
 protected:
 	edict_t *m_pActivator;
 private:
-	char *m_szType;
+	const char *m_szType;
 	int m_iEventId;	
 	eModId m_iModId;
 };

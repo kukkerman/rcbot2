@@ -76,7 +76,7 @@
 
 #include "bot_fortress.h"
 
-std::vector <char *> CBotConfigFile::m_Commands;
+std::vector<std::string> CBotConfigFile::m_Commands;
 unsigned int CBotConfigFile::m_iCmd = 0; // current command (time delayed)
 float CBotConfigFile::m_fNextCommandTime = 0.0f;
 
@@ -110,7 +110,7 @@ void CBotConfigFile :: load ()
 		//if ( line[len-1] == '\n' || ( line[len-1] == '\r' ))
 		//	line[--len] = 0;
 
-		m_Commands.push_back(CStrings::getString(line));
+		m_Commands.push_back(line);
 	}
 
 	fclose(fp);
@@ -121,9 +121,9 @@ void CBotConfigFile :: doNextCommand ()
 {
 	if ( (m_fNextCommandTime < engine->Time()) && (m_iCmd < m_Commands.size()) )
 	{
-		engine->ServerCommand(m_Commands[m_iCmd]);
+		engine->ServerCommand(m_Commands[m_iCmd].c_str());
 
-		CBotGlobals::botMessage(NULL,0,"Bot Command '%s' executed",m_Commands[m_iCmd]);
+		CBotGlobals::botMessage(NULL,0,"Bot Command '%s' executed",m_Commands[m_iCmd].c_str());
 		m_iCmd ++;
 		m_fNextCommandTime = engine->Time() + 0.1f;
 	}

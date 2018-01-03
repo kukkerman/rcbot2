@@ -105,10 +105,15 @@ CBotProfile CBotProfile::parseFromFile(FILE *f) {
 	CRCBotKeyValueList kv;
 	kv.parseFile(f);
 
+    char *model;
+    char *name;
+
 	kv.getInt("team", &profile.m_iTeam);
 	kv.getInt("class", &profile.m_iClass);
-	kv.getString("model", &profile.m_szModel);
-	kv.getString("name", &profile.m_szName);
+	kv.getString("model", &model);
+    profile.m_szModel = CStrings::getString(model);
+	kv.getString("name", &name);
+    profile.m_szName = CStrings::getString(name);
 	kv.getInt("visionticks", &profile.m_iVisionTicks);
 	kv.getInt("visionticksclients", &profile.m_iVisionTicksClients);
 	kv.getInt("pathticks", &profile.m_iPathTicks);

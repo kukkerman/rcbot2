@@ -941,7 +941,7 @@ void CClient :: think ()
 	}
 }
 
-void CClient::giveMessage(char *msg,float fTime)
+void CClient::giveMessage(const char *msg,float fTime)
 {
 	extern ConVar rcbot_tooltips;
 
@@ -1128,7 +1128,7 @@ void CClients :: clientThink ()
 	}
 }
 
-CClient *CClients :: findClientBySteamID ( char *szSteamID )
+CClient *CClients :: findClientBySteamID ( const char *szSteamID )
 {
 	CClient *pClient;
 

@@ -338,8 +338,8 @@ private:
 	unsigned int m_offset;
 	unsigned int m_preoffset;
 	void *m_data;
-	char *m_class;
-	char *m_value;
+	const char *m_class;
+	const char *m_value;
 
 	static bool m_berror;
 };

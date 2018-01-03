@@ -127,13 +127,13 @@ public:
 // linux fix
 	void setup ( const char *szModFolder, const char *szSteamFolder, eModId iModId, eBotType iBotType, const char *szWeaponListName );
 
-	bool isSteamFolder ( char *szSteamFolder );
+	bool isSteamFolder ( const char *szSteamFolder );
 
-	bool isModFolder ( char *szModFolder );
+	bool isModFolder ( const char *szModFolder );
 
-	char *getSteamFolder ();
+	const char *getSteamFolder ();
 
-	char *getModFolder ();
+	const char *getModFolder ();
 
 	virtual const char *getPlayerClass ()
 	{
@@ -218,12 +218,12 @@ public:
 		return m_bBotCommand_ResetCheatFlag;
 	}
 private:
-	char *m_szModFolder;
-	char *m_szSteamFolder;
+	const char *m_szModFolder;
+	const char *m_szSteamFolder;
 	eModId m_iModId;
 	eBotType m_iBotType;
 protected:
-	char *m_szWeaponListName;
+	const char *m_szWeaponListName;
 	bool m_bPlayerHasSpawned;
 	bool m_bBotCommand_ResetCheatFlag;
 	bool m_bBotCommand_NeedCheatsHack;
@@ -1609,7 +1609,7 @@ public:
 
 	static void freeMemory ();
 
-	static CBotMod *getMod ( char *szModFolder, char *szSteamFolder );
+	static CBotMod *getMod ( const char *szModFolder, const char *szSteamFolder );
 
 private:
 	static std::vector<CBotMod*> m_Mods;

@@ -276,7 +276,7 @@ public:
 	}
 	inline bool autoWaypointOn () { return m_bAutoWaypoint; }
 	void autoEventWaypoint ( int iType, float fRadius, bool bAtOtherOrigin = false, int iTeam = 0, Vector vOrigin = Vector(0,0,0), bool bIgnoreTeam = false, bool bAutoType = false );
-	void giveMessage(char*msg, float fTime=0.1f);
+	void giveMessage(const char *msg, float fTime=0.1f);
 private:
 	edict_t *m_pPlayer;
 	// steam id
@@ -393,7 +393,7 @@ public:
 	static bool clientsDebugging ( int iLev = 0 );
 	static void clientDebugMsg ( int iLev, const char *szMsg, CBot *pBot = NULL );
 	static void clientDebugMsg(CBot *pBot, int iLev, const char *fmt, ... );
-	static CClient *findClientBySteamID ( char *szSteamID );
+	static CClient *findClientBySteamID ( const char *szSteamID );
 	static edict_t *getListenServerClient() { if ( m_pListenServerClient ) return m_pListenServerClient->getPlayer(); else return NULL; }
 
 	static void initall () { for ( int i = 0; i < MAX_PLAYERS; i ++ ) { m_Clients[i].init(); } }

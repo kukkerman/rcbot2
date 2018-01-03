@@ -353,22 +353,22 @@ void CBotMod :: setup ( const char *szModFolder, const char *szSteamFolder, eMod
 	return NULL;
 }*/
 
-bool CBotMod :: isSteamFolder ( char *szSteamFolder )
+bool CBotMod :: isSteamFolder ( const char *szSteamFolder )
 {
 	return FStrEq(m_szSteamFolder,szSteamFolder);
 }
 
-bool CBotMod :: isModFolder ( char *szModFolder )
+bool CBotMod :: isModFolder ( const char *szModFolder )
 {
 	return FStrEq(m_szModFolder,szModFolder);
 }
 
-char *CBotMod :: getSteamFolder ()
+const char *CBotMod :: getSteamFolder ()
 {
 	return m_szSteamFolder;
 }
 
-char *CBotMod :: getModFolder ()
+const char *CBotMod :: getModFolder ()
 {
 	return m_szModFolder;
 }
@@ -395,7 +395,7 @@ void CBotMods :: freeMemory ()
 	m_Mods.clear();
 }
 
-CBotMod *CBotMods :: getMod ( char *szModFolder, char *szSteamFolder )
+CBotMod *CBotMods :: getMod ( const char *szModFolder, const char *szSteamFolder )
 {
 	for ( unsigned int i = 0; i < m_Mods.size(); i ++ )
 	{

@@ -96,8 +96,8 @@ protected:
 	void setHelp ( char *pszHelp );
 
 	int m_iAccessLevel;
-	char *m_szCommand;
-	char *m_szHelp;
+	const char *m_szCommand;
+	const char *m_szHelp;
 };
 
 // container of commands

@@ -108,8 +108,8 @@ public:
 private:
 	int m_iMods; // mods allowed
 	int m_iBit; // bits used
-	char *m_szName; // e.g. "jump"/"ladder"
-	char *m_szDescription; // e.g. "will jump here"/"will climb here"
+	const char *m_szName; // e.g. "jump"/"ladder"
+	const char *m_szDescription; // e.g. "will jump here"/"will climb here"
 	int m_iImportance;
 	WptColor m_vColour;
 };

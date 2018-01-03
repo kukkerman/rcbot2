@@ -31,7 +31,7 @@
 #ifndef __BOT_STRINGS_H__
 #define __BOT_STRINGS_H__
 
-#include <vector>
+#include <unordered_set>
 
 #define MAX_STRINGS_HASH 26
 
@@ -52,14 +52,12 @@
 class CStrings
 {
 public:
-	CStrings ();
 	static void freeAllMemory();
-	static char *getString ( const char *szString );
+	static const char* getString(const char *str);
 
 private:
-	// dataStack is like a linked list, dont want 
-	// to use an array for lots of stuff like this
-	static std::vector<char *> m_Strings[MAX_STRINGS_HASH];
+    using StringSet = std::unordered_set<std::string>;
+    static StringSet *strings;
 };
 
 #endif

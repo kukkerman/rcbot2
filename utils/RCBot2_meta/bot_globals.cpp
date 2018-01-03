@@ -58,8 +58,8 @@ extern IServerGameEnts *servergameents;
 
 ///////////
 trace_t CBotGlobals :: m_TraceResult;
-char * CBotGlobals :: m_szGameFolder = NULL;
-char * CBotGlobals :: m_szModFolder = NULL;
+const char * CBotGlobals :: m_szGameFolder = NULL;
+const char * CBotGlobals :: m_szModFolder = NULL;
 eModId CBotGlobals :: m_iCurrentMod = MOD_UNSUPPORTED;
 CBotMod *CBotGlobals :: m_pCurrentMod = NULL;
 bool CBotGlobals :: m_bMapRunning = false;
@@ -68,7 +68,7 @@ int CBotGlobals :: m_iEventVersion = 1;
 int CBotGlobals :: m_iWaypointDisplayType = 0;
 char CBotGlobals :: m_szMapName[MAX_MAP_STRING_LEN];
 bool CBotGlobals :: m_bTeamplay = false;
-char *CBotGlobals :: m_szRCBotFolder = NULL;
+const char *CBotGlobals :: m_szRCBotFolder = NULL;
 std::vector<bool> CBotGlobals :: m_playerIsAlive;
 
 ///////////
@@ -112,8 +112,6 @@ CBotGlobals :: CBotGlobals ()
 void CBotGlobals :: init ()
 {
 	m_iCurrentMod = MOD_UNSUPPORTED;
-	m_szModFolder[0] = 0;
-	m_szGameFolder[0] = 0;
 }
 
 void CBotGlobals::setClientMax(int iMaxClients) {
@@ -862,7 +860,7 @@ bool CBotGlobals :: linesTouching3d (
 	return onOppositeSides3d(amins,amaxs,bmins,bmaxs) && boundingBoxTouch3d(amins,amaxs,bmins,bmaxs);
 }
 
-void CBotGlobals :: botMessage ( edict_t *pEntity, int iErr, char *fmt, ... )
+void CBotGlobals :: botMessage ( edict_t *pEntity, int iErr, const char *fmt, ... )
 {
 	va_list argptr; 
 	static char string[1024];
