@@ -2262,9 +2262,13 @@ eBotCommandResult CKickBotCommand :: execute ( CClient *pClient, const char *pcm
 	}
 	else
 	{
-		int team = atoi(pcmd);
+        const auto teamId = CBotGlobals::getCurrentMod()->getIdForTeamName(pcmd);
+        if (teamId != -1) {
+            CBots::kickRandomBotOnTeam(teamId);
 
-		CBots::kickRandomBotOnTeam(team);
+        } else {
+            return COMMAND_ERROR;
+        }
 	}
 
 	
