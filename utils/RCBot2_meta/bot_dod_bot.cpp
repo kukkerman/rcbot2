@@ -498,7 +498,7 @@ void CDODBot :: seeFriendlyDie ( edict_t *pDied, edict_t *pKiller, CWeapon *pWea
 				{
 					//bFollow = false;
 
-					ADD_UTILITY_DATA_VECTOR(BOT_UTIL_COVER_POINT,m_pCurrentWeapon != NULL,0.8f,((unsigned int)pKiller),(vecEnemy));
+					ADD_UTILITY_DATA_VECTOR(BOT_UTIL_COVER_POINT,m_pCurrentWeapon,0.8f,((unsigned int)pKiller),(vecEnemy));
 				}
 			}
 			/*else if ( CBotGlobals::isPlayer(pDied) )
@@ -537,7 +537,7 @@ void CDODBot :: seeFriendlyDie ( edict_t *pDied, edict_t *pKiller, CWeapon *pWea
 		m_fLastSeeEnemy = engine->Time();
 		m_pLastEnemy = pKiller;
 		m_fLastUpdateLastSeeEnemy = 0;
-		m_vLastSeeEnemy = CBotGlobals::entityOrigin(m_pLastEnemy);
+		m_vLastSeeEnemy = CBotGlobals::entityOrigin(pKiller);
 		m_vLastSeeEnemyBlastWaypoint = m_vLastSeeEnemy;
 
 		pWpt = CWaypoints::getWaypoint(CWaypointLocations::NearestBlastWaypoint(m_vLastSeeEnemy,getOrigin(),1500.0f,-1,true,true,false,false,0,false));
@@ -3122,7 +3122,7 @@ void CDODBot :: getTasks (unsigned int iIgnore)
 			bAttackNearestFlag = !CDODMod::m_Flags.ownsFlag(iFlagID,m_iTeam) && ((CDODMod::m_Flags.numCappersRequired(iFlagID,m_iTeam)-CDODMod::m_Flags.numFriendliesAtCap(iFlagID,m_iTeam))>0);
 		}
 
-		if ( (m_pNearestFlag==NULL) || !bAttackNearestFlag )
+		if ( !m_pNearestFlag || !bAttackNearestFlag )
 		{
 			if ( !hasSomeConditions(CONDITION_DEFENSIVE) && CDODMod::shouldAttack(m_iTeam) )
 			{
@@ -3222,7 +3222,7 @@ void CDODBot :: getTasks (unsigned int iIgnore)
 
 		if ( iNumEnemyBombsOnMap > 0 )
 		{
-			ADD_UTILITY(BOT_UTIL_DEFEND_POINT,(iFlagsOwned>0)&&(m_pNearestFlag==NULL)||CDODMod::m_Flags.ownsFlag(iFlagID,m_iTeam),fDefendUtil);
+			ADD_UTILITY(BOT_UTIL_DEFEND_POINT,(iFlagsOwned>0)&&(!m_pNearestFlag)||CDODMod::m_Flags.ownsFlag(iFlagID,m_iTeam),fDefendUtil);
 
 			/*if ( m_pNearestFlag )
 			{

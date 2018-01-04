@@ -1190,10 +1190,10 @@ public:
 
 	static bool isFlagCarried (int iTeam)
 	{
-		if ( iTeam == TF2_TEAM_BLUE )
-			return (m_pFlagCarrierBlue != NULL);
-		else if ( iTeam == TF2_TEAM_RED )
-			return (m_pFlagCarrierRed != NULL);
+        if (iTeam == TF2_TEAM_BLUE)
+            return m_pFlagCarrierBlue.isValid();
+        else if (iTeam == TF2_TEAM_RED)
+            return m_pFlagCarrierRed.isValid();
 
 		return false;
 	}

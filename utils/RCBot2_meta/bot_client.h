@@ -385,7 +385,7 @@ public:
 	static int slotOfEdict ( edict_t *pPlayer );
 	static void init ( edict_t *pPlayer );
 	static CClient *get ( int iIndex ) { return &m_Clients[iIndex]; }
-	static CClient *get ( edict_t *pPlayer ) { return &m_Clients[slotOfEdict(pPlayer)]; }
+	static CClient *get ( edict_t *pPlayer ) { return pPlayer != nullptr ? &m_Clients[slotOfEdict(pPlayer)] : nullptr; }
 	static void setListenServerClient ( CClient *pClient ) { m_pListenServerClient = pClient; }
 	static bool isListenServerClient ( CClient *pClient ) { return m_pListenServerClient == pClient; }
 	static bool noListenServerClient () { return m_pListenServerClient == NULL; }

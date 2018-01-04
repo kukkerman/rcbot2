@@ -1741,7 +1741,7 @@ void CWaypoints :: updateWaypointPairs ( std::vector<edict_wpt_pair_t> *pPairs, 
 			pair.pWaypoint = pWpt;
 			pair.pEdict = CClassInterface::FindEntityByClassnameNearest(pWpt->getOrigin(),szClassname,300.0f);
 
-			if ( pair.pEdict != NULL )
+			if ( pair.pEdict )
 			{
 				vOrigin = CBotGlobals::entityOrigin(pair.pEdict);
 

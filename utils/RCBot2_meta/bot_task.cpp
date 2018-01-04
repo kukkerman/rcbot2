@@ -2193,7 +2193,7 @@ void CFindPathTask :: execute ( CBot *pBot, CBotSchedule *pSchedule )
 
 		if ( m_flags.bits.m_bFailTaskEdictDied )
 		{
-			if ( (m_pEdict == NULL) || !CBotGlobals::entityIsAlive(m_pEdict) )
+			if ( !m_pEdict || !CBotGlobals::entityIsAlive(m_pEdict) )
 			{
 				fail();
 			}

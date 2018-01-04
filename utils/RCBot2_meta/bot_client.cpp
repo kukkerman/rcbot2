@@ -381,7 +381,7 @@ void CClient :: think ()
 		}
 
 
-		if ( (m_pDebugBot!=NULL) && isDebugOn(BOT_DEBUG_HUD) )
+		if ( m_pDebugBot && isDebugOn(BOT_DEBUG_HUD) )
 		{
 			if ( m_fNextPrintDebugInfo < engine->Time() )
 			{

@@ -32,90 +32,76 @@
 #define __RCBOT_EHANDLE_H__
 
 ////// entity handling in network
-class MyEHandle 
-{
+class MyEHandle {
 public:
-	MyEHandle ()
-	{
-		m_pEnt = NULL;
-		m_iSerialNumber = 0;
-	}
+    MyEHandle() :
+        m_pEnt(nullptr),
+        m_iSerialNumber(0) { }
 
-    MyEHandle ( edict_t *pent )
-	{
-		m_pEnt = pent;
+    MyEHandle(edict_t *pent) :
+        m_pEnt(pent),
+        m_iSerialNumber(pent != nullptr ? pent->m_NetworkSerialNumber : 0) { }
 
-		if ( pent )
-		{
-			m_iSerialNumber = pent->m_NetworkSerialNumber;
-		}
-		else
-			m_iSerialNumber = 0;
-	}
+    inline bool notValid() const { return get() == nullptr; }
+    inline bool isValid() const { return get() != nullptr; }
 
-	inline bool notValid () { return get() == NULL; }
-	inline bool isValid () { return get() != NULL; }
+    inline edict_t *get() const {
+        if (m_iSerialNumber != 0 && m_pEnt != nullptr) {
+            if (!m_pEnt->IsFree() && m_iSerialNumber == m_pEnt->m_NetworkSerialNumber) {
+                return m_pEnt;
+            }
 
-	inline edict_t *get ()
-	{
-		if ( m_iSerialNumber && m_pEnt )
-		{
-			if ( !m_pEnt->IsFree() && (m_iSerialNumber == m_pEnt->m_NetworkSerialNumber) )
-				return m_pEnt;
-		}
-		else if ( m_pEnt )
-			m_pEnt = NULL;
+        } else if (m_pEnt) {
+            m_pEnt = nullptr;
+        }
 
-		return NULL;
-	}
+        return nullptr;
+    }
 
-	inline edict_t *get_old ()
-	{
-		return m_pEnt;
-	}
+    inline edict_t *get_old() const {
+        return m_pEnt;
+    }
 
-	inline operator edict_t * const ()
-	{ // same as get function (inlined for speed)
-		if ( m_iSerialNumber && m_pEnt )
-		{
-			if ( !m_pEnt->IsFree() && (m_iSerialNumber == m_pEnt->m_NetworkSerialNumber) )
-				return m_pEnt;
-		}
+    inline operator edict_t* const () {
+        return get();
+    }
 
-		return NULL;
-	}
+    inline operator bool() const {
+        return get() != nullptr;
+    }
 
-	inline bool operator == ( int a )
-	{
-		return ((int)get() == a);
-	}
+    inline bool operator == (edict_t *pent) const {
+        return get() == pent;
+    }
 
-	inline bool operator == ( edict_t *pent )
-	{
-		return (get() == pent);
-	}
+    inline bool operator != (edict_t *pent) const {
+        return get() != pent;
+    }
 
-	inline bool operator == ( MyEHandle &other )
-	{
-		return (get() == other.get());
-	}
+    inline bool operator == (const MyEHandle &other) const {
+        return get() == other.get();
+    }
 
-	inline edict_t * operator = ( edict_t *pent )
-	{
-		m_pEnt = pent;
+    inline bool operator != (const MyEHandle &other) const {
+        return get() != other.get();
+    }
 
-		if ( pent )
-		{
-			m_iSerialNumber = pent->m_NetworkSerialNumber;
-		}
-		else
-			m_iSerialNumber = 0;
+    inline MyEHandle& operator = (edict_t *pent) {
+        m_pEnt = pent;
 
-		return m_pEnt;
-	}
+        if (pent) {
+            m_iSerialNumber = pent->m_NetworkSerialNumber;
+
+        } else {
+            m_iSerialNumber = 0;
+        }
+
+        return *this;
+    }
+
 private:
 	int m_iSerialNumber;
-	edict_t *m_pEnt;
+	mutable edict_t *m_pEnt;
 };
 
 #endif

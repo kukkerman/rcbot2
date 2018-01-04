@@ -714,7 +714,7 @@ void CTeamFortress2Mod ::modFrame ()
 {
 	if( m_bPlayerHasSpawned )
 	{
-		if ( m_ObjectiveResource.m_ObjectiveResource == NULL )
+		if ( !m_ObjectiveResource.m_ObjectiveResource )
 		{
 			m_ObjectiveResource.m_ObjectiveResource = CClassInterface::FindEntityByNetClass(gpGlobals->maxClients+1, "CTFObjectiveResource");
 		

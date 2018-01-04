@@ -944,7 +944,7 @@ void CBot :: think ()
 			m_fWantToListenTime = engine->Time() + 1.0f;
 
 			// is player
-			if ( ENTINDEX(m_pEnemy.get()) <= gpGlobals->maxClients )
+			if ( m_pEnemy && ENTINDEX(m_pEnemy.get()) <= gpGlobals->maxClients )
 				m_fLastSeeEnemyPlayer = engine->Time();
 		}
 
@@ -1500,7 +1500,7 @@ void CBot::setLastEnemy(edict_t *pEnemy)
 	m_fLastSeeEnemy = engine->Time();
 	m_pLastEnemy = pEnemy;
 	m_fLastUpdateLastSeeEnemy = 0;
-	m_vLastSeeEnemy = CBotGlobals::entityOrigin(m_pLastEnemy);
+	m_vLastSeeEnemy = CBotGlobals::entityOrigin(pEnemy);
 	m_vLastSeeEnemyBlastWaypoint = m_vLastSeeEnemy;
 
 	pWpt = CWaypoints::getWaypoint(CWaypointLocations::NearestBlastWaypoint(m_vLastSeeEnemy,getOrigin(),8192.0,-1,true,true,false,false,0,false));
@@ -1789,7 +1789,7 @@ void CBot ::debugBot(char *msg)
 
 	iEnemyID = ENTINDEX(pEnemy);
 
-	if ( (iEnemyID > 0) && (iEnemyID <= gpGlobals->maxClients) )
+	if ( pEnemy && (iEnemyID > 0) && (iEnemyID <= gpGlobals->maxClients) )
 		p = playerinfomanager->GetPlayerInfo(pEnemy);
 	
 
@@ -3099,7 +3099,7 @@ bool CBots :: controlBot ( const char *szOldName, const char *szName, const char
 	edict_t *pEdict;	
 	CBotProfile *pBotProfile;
 
-	char *szOVName = "";
+	const char *szOVName = "";
 
 	if ( (pEdict = CBotGlobals::findPlayerByTruncName(szOldName)) == NULL )
 	{
