@@ -87,41 +87,39 @@ void CBotConfigFile :: load ()
 {
 	char filename[512];
 	char line[256];
-	//int len;
+
 	m_Commands.clear();
 
 	CBotGlobals::buildFileName(filename,"config",BOT_CONFIG_FOLDER,BOT_CONFIG_EXTENSION);
-
-	FILE *fp = CBotGlobals::openFile(filename,"r");
-
-	if ( !fp )
-	{
-		CBotGlobals::botMessage(NULL,0,"config file not found");
+	auto fp = CBotGlobals::openFile(filename,"rt");
+	if (fp == nullptr) {
+		CBotGlobals::botMessage(NULL, 0, "config file '%s' not found", filename);
 		return;
 	}
 
-	while ( fgets(line,255,fp) != NULL )
-	{
-		if ( line[0] == '#' )
-			continue;
+	while (fgets(line,sizeof(line),fp) != NULL) {
+        auto l = strlen(line);
+        if (l > 0 && line[l - 1] == '\n') {
+            line[--l] = 0;
+        }
 
-		//len = strlen(line);
+        if (l > 0) {
+            if (line[0] == '#')
+                continue;
 
-		//if ( line[len-1] == '\n' || ( line[len-1] == '\r' ))
-		//	line[--len] = 0;
-
-		m_Commands.push_back(line);
+            m_Commands.push_back(line);
+        }
 	}
 
 	fclose(fp);
-
 }
 
 void CBotConfigFile :: doNextCommand ()
 {
 	if ( (m_fNextCommandTime < engine->Time()) && (m_iCmd < m_Commands.size()) )
 	{
-		engine->ServerCommand(m_Commands[m_iCmd].c_str());
+        const auto cmd = m_Commands[m_iCmd] + '\n';
+		engine->ServerCommand(cmd.c_str());
 
 		CBotGlobals::botMessage(NULL,0,"Bot Command '%s' executed",m_Commands[m_iCmd].c_str());
 		m_iCmd ++;
