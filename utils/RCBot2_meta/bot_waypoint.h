@@ -32,6 +32,7 @@
 #define __RCBOT_WAYPOINT_H__
 
 #include <stdio.h>
+#include <unordered_set>
 
 #include "bot.h"
 #include "bot_genclass.h"
@@ -223,14 +224,12 @@ public:
 
 	CWaypoint ()
 	{
-		m_thePaths.Init();
 		init();
 //		m_iId = -1;
 	}
 
 	CWaypoint ( Vector vOrigin, int iFlags = 0, int iYaw = 0, int m_fRadius = 0 )
 	{
-		m_thePaths.Clear();
 		init();
 		m_iFlags = iFlags;
 		m_vOrigin = vOrigin;		
@@ -239,7 +238,6 @@ public:
 		m_fNextCheckGroundTime = 0;
 		m_bHasGround = false;
 		m_fRadius = 0;
-		m_OpensLaterInfo.Clear();
 		m_bIsReachable = true; 
 		m_fCheckReachableTime = 0;
 //		m_iId = iId;
@@ -328,7 +326,7 @@ public:
 
 	inline void freeMapMemory ()
 	{
-		m_thePaths.Clear();//Destroy();
+        m_thePaths.clear();
 	}
 
 	inline int getArea () { return m_iArea; }
@@ -351,10 +349,9 @@ public:
 
 	int numPaths ();
 
-	int numPathsToThisWaypoint ();
-	int getPathToThisWaypoint ( int i );
-
-	int getPath ( int i );
+	int numPathsToThisWaypoint();
+    const std::unordered_set<int>& getPathsTo() const;
+    const std::unordered_set<int>& getPaths() const;
 
 	void load ( FILE *bfp, int iVersion );
 
@@ -382,16 +379,15 @@ private:
 	// not deleted
 	bool m_bUsed;
 	// paths to other waypoints
-	dataUnconstArray<int> m_thePaths;
+    std::unordered_set<int> m_thePaths;
 	// for W_FL_WAIT_GROUND waypoints
 	float m_fNextCheckGroundTime;
 	bool m_bHasGround;
 	// Update m_iNumPathsTo (For display)
 	bool m_bIsReachable; 
 	float m_fCheckReachableTime;
-	dataUnconstArray<int> m_PathsTo; // paths to this waypoint from other waypoints
-
-	dataUnconstArray<wpt_opens_later_t> m_OpensLaterInfo;
+    std::unordered_set<int> m_PathsTo; // paths to this waypoint from other waypoints
+    std::list<wpt_opens_later_t> m_OpensLaterInfo;
 };
 
 class CWaypoints

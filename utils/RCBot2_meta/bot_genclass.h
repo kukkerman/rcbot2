@@ -679,7 +679,7 @@ class dataUnconstArray
 			array.clear();
 			array = newVec;
 #else
-			typename vector<T> ::iterator it;
+			typename std::vector<T> ::iterator it;
 
 			for ( it = array.begin(); it != array.end(); )
 			{

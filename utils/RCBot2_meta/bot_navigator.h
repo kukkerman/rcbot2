@@ -87,7 +87,6 @@ public:
 	virtual bool canGetTo ( Vector vOrigin ) = 0;
 
 	virtual int getCurrentFlags () { return 0; }
-	virtual int getPathFlags ( int iPath ) { return 0; }
 
 	virtual float distanceTo ( Vector vOrigin ) = 0;
 
@@ -127,8 +126,6 @@ public:
 	virtual void beliefOne ( int iWptIndex, BotBelief iBeliefType, float fDist ) { return; }
 
 	virtual int numPaths ( ) { return 0; }
-
-	virtual Vector getPath ( int pathid ) { return Vector(0,0,0); }
 
 	virtual bool randomDangerPath (Vector *vec) { return false; }
 
@@ -181,6 +178,7 @@ private:
     size_t size;
 };
 
+/*
 class AStarNode
 {
 public:
@@ -230,6 +228,7 @@ private:
 	short int m_iParent;
 	int m_iWaypoint;
 };
+*/
 
 /*
 struct AstarNodeCompare : binary_function<AStarNode*, AStarNode*, bool> 
@@ -286,12 +285,17 @@ typedef struct
 class CWaypointNavigator : public IBotNavigator
 {
 public:
+    struct Goal {
+        int wpt;
+        float heuristic;
+    };
+
     CWaypointNavigator(CBot *pBot);
 	
     void init ();
 
-	CWaypoint *chooseBestFromBelief ( dataUnconstArray<CWaypoint*> *goals, bool bHighDanger = false, int iSearchFlags = 0, int iTeam = 0);
-	CWaypoint *chooseBestFromBeliefBetweenAreas ( dataUnconstArray<AStarNode*> *goals, bool bHighDanger = false, bool bIgnoreBelief = false );
+    CWaypoint *chooseBestFromBelief(std::list<CWaypoint*> *goals, bool bHighDanger = false, int iSearchFlags = 0, int iTeam = 0);
+	CWaypoint *chooseBestFromBeliefBetweenAreas(std::list<Goal> *goals, bool bHighDanger = false, bool bIgnoreBelief = false );
 
 	float getNextYaw ();
 
@@ -346,8 +350,6 @@ public:
 
 	int numPaths ( );
 
-	Vector getPath ( int pathid );
-
 	bool randomDangerPath (Vector *vec);
 
 	bool beliefLoad ( );
@@ -367,7 +369,6 @@ public:
 	}
 
 	int getCurrentFlags ();
-	int getPathFlags ( int iPath );
 
 private:
 	CBot *m_pBot;

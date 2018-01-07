@@ -1622,8 +1622,9 @@ void CBotInvestigateTask :: execute (CBot *pBot,CBotSchedule *pSchedule)
 
 		if ( pWaypoint->numPaths() > 0 )
 		{
-			for ( int i = 0; i < pWaypoint->numPaths(); i ++ )
-				m_InvPoints.push_back(CWaypoints::getWaypoint(pWaypoint->getPath(i))->getOrigin());	
+            for (auto wpt : pWaypoint->getPaths()) {
+                m_InvPoints.push_back(CWaypoints::getWaypoint(wpt)->getOrigin());
+            }
 
             const auto randomFunc = [](int max) { return randomInt(0, max - 1); };
             std::random_shuffle(m_InvPoints.begin(), m_InvPoints.end(), randomFunc);
@@ -2954,12 +2955,7 @@ void CBotTF2SnipeCrossBow::execute(CBot *pBot, CBotSchedule *pSchedule)
 			CWaypoint *pWaypoint = CWaypoints::getWaypoint(m_iSnipeWaypoint);
 			CWaypointVisibilityTable *pTable = CWaypoints::getVisiblity();
 
-			int iPathId;
-
-			for (int i = 0; i < pWaypoint->numPaths(); i++)
-			{
-				iPathId = pWaypoint->getPath(i);
-
+            for (auto iPathId : pWaypoint->getPaths()) {
 				// isn't visible to the target
 				if (!pTable->GetVisibilityFromTo(iAimWpt, iPathId))
 				{
@@ -2972,7 +2968,11 @@ void CBotTF2SnipeCrossBow::execute(CBot *pBot, CBotSchedule *pSchedule)
 			if (m_iHideWaypoint == -1)
 			{
 				// can't find a useful hide waypoint -- choose a random one
-				m_iHideWaypoint = pWaypoint->getPath(randomInt(0, pWaypoint->numPaths()));
+                auto wpt = pWaypoint->getPaths().cbegin();
+                for (auto i = randomInt(0, pWaypoint->numPaths() - 1); i > 0; i--) {
+                    ++wpt;
+                }
+                m_iHideWaypoint = *wpt;
 
 				if (m_iHideWaypoint != -1)
 				{
@@ -3241,12 +3241,7 @@ void CBotTF2Snipe :: execute (CBot *pBot,CBotSchedule *pSchedule)
 			CWaypoint *pWaypoint = CWaypoints::getWaypoint(m_iSnipeWaypoint);
 			CWaypointVisibilityTable *pTable = CWaypoints::getVisiblity();
 
-			int iPathId;
-
-			for ( int i = 0; i < pWaypoint->numPaths(); i ++ )
-			{
-				iPathId = pWaypoint->getPath(i);
-
+            for (auto iPathId: pWaypoint->getPaths()) {
 				// isn't visible to the target
 				if ( !pTable->GetVisibilityFromTo(iAimWpt,iPathId) )
 				{
@@ -3259,8 +3254,11 @@ void CBotTF2Snipe :: execute (CBot *pBot,CBotSchedule *pSchedule)
 			if (m_iHideWaypoint == -1)
 			{
 				// can't find a useful hide waypoint -- choose a random one
-				int pathid = randomInt(0, pWaypoint->numPaths());
-				m_iHideWaypoint = pWaypoint->getPath(pathid);
+                auto wpt = pWaypoint->getPaths().cbegin();
+                for (auto i = randomInt(0, pWaypoint->numPaths() - 1); i > 0; i--) {
+                    ++wpt;
+                }
+                m_iHideWaypoint = *wpt;
 
 				if (m_iHideWaypoint != -1)
 				{
@@ -3768,9 +3766,8 @@ CBotInvestigateHidePoint :: CBotInvestigateHidePoint ( int iWaypointIndexToInves
 	m_fInvestigateTime = 0;
 	m_iState = 0;
 
-	for ( int i = 0; i < pWaypoint->numPaths(); i ++ )
-	{
-		CWaypoint *pWaypointOther = CWaypoints::getWaypoint(pWaypoint->getPath(i));
+    for (auto wpt: pWaypoint->getPaths()) {
+		CWaypoint *pWaypointOther = CWaypoints::getWaypoint(wpt);
 
 		if ( pWaypointOther == pWaypoint )
 			continue;
@@ -4781,11 +4778,10 @@ void CBotTF2AttackSentryGunTask::execute (CBot *pBot,CBotSchedule *pSchedule)
 
 		if ( pWpt != NULL )
 		{
-			for ( int i = 0; i < pWpt->numPaths(); i ++ )
-			{
-				if ( table->GetVisibilityFromTo(pWpt->getPath(i),m_iSentryWaypoint) == false )
+            for (auto wpt: pWpt->getPaths()) {
+				if ( table->GetVisibilityFromTo(wpt, m_iSentryWaypoint) == false )
 				{
-					CWaypoint *pPath = CWaypoints::getWaypoint(pWpt->getPath(i));
+					CWaypoint *pPath = CWaypoints::getWaypoint(wpt);
 
 					if ( (fDist = pPath->distanceFrom(m_vStart)) < fMinDist )
 					{
@@ -4794,7 +4790,7 @@ void CBotTF2AttackSentryGunTask::execute (CBot *pBot,CBotSchedule *pSchedule)
 					}
 				}
 
-				pWpt->getPath(i);
+				//pWpt->getPath(i);
 			}
 
 		}

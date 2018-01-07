@@ -1236,9 +1236,8 @@ void CClient :: setWaypointCut (CWaypoint *pWaypoint)
 
 		m_WaypointCutPaths.clear();
 
-		for ( i = 0; i < pWaypoint->numPaths(); i ++ )
-		{
-			m_WaypointCutPaths.push_back(pWaypoint->getPath(i));
+        for (auto wpt: pWaypoint->getPaths()) {
+			m_WaypointCutPaths.push_back(wpt);
 		}
 
 		m_WaypointCopyType = WPT_COPY_CUT;

@@ -165,7 +165,7 @@ public:
     void freeMemory();
     void add(CBotSchedule *pSchedule);
     void addFront(CBotSchedule *pSchedule);
-    inline bool isEmpty() const;
+    bool isEmpty() const;
     CBotTask *getCurrentTask() const;
     CBotSchedule *getCurrentSchedule() const;
 

@@ -977,8 +977,6 @@ void CDODBot :: touchedWpt ( CWaypoint *pWaypoint, int iNextWaypoint, int iPrevW
 		if ( (iPrevWaypoint != -1) && (iNextWaypoint != -1) && (randomFloat(0,MAX_BELIEF) < m_pNavigator->getBelief(CWaypoints::getWaypointIndex(pWaypoint))) )
 		{
 			
-			int i;
-			int iPath;
 			CWaypointVisibilityTable *pTable = CWaypoints::getVisiblity();
 			std::vector<int> m_InvisPaths;
 			CWaypoint *pPath;
@@ -988,10 +986,7 @@ void CDODBot :: touchedWpt ( CWaypoint *pWaypoint, int iNextWaypoint, int iPrevW
 
 			extern IVDebugOverlay *debugoverlay;
 
-			for ( i = 0; i < pWaypoint->numPaths(); i++ )
-			{
-				iPath = pWaypoint->getPath(i);
-
+            for (auto iPath : pWaypoint->getPaths()) {
 				if ( iPath == iNextWaypoint )
 					continue;
 				if ( iPath == iPrevWaypoint )
