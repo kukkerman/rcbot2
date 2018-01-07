@@ -73,6 +73,99 @@ extern IVDebugOverlay *debugoverlay;
 
 extern ConVar bot_belief_fade;
 
+PrioQueue::PrioQueue(size_t numWaypoints) :
+    nodes(numWaypoints),
+    wptIndex(numWaypoints),
+    size(0) { }
+
+bool PrioQueue::isEmpty() const {
+    return size == 0;
+}
+
+void PrioQueue::clear() {
+    size = 0;
+}
+
+int PrioQueue::top() const {
+    return nodes[0].wpt;
+}
+
+void PrioQueue::pop() {
+    size--;
+    if (size > 0) {
+        std::swap(nodes[0], nodes[size]);
+        std::swap(wptIndex[nodes[0].wpt], wptIndex[nodes[size].wpt]);
+        heapDown(0);
+    }
+}
+
+void PrioQueue::push(int wpt, float prio) {
+    nodes[size].wpt = wpt;
+    nodes[size].prio = prio;
+    wptIndex[wpt] = size;
+    heapUp(size);
+    size++;
+}
+
+void PrioQueue::relax(int wpt, float newPrio) {
+    const auto i = wptIndex[wpt];
+    nodes[i].prio = newPrio;
+
+    if (i > 0 && nodes[i].prio < nodes[(i - 1) >> 1].prio) {
+        heapUp(i);
+
+    } else {
+        heapDown(i);
+    }
+}
+
+void PrioQueue::heapUp(size_t i) {
+    auto parent = (i - 1) >> 1;
+    while (i > 0 && nodes[i].prio < nodes[parent].prio) {
+        std::swap(nodes[i], nodes[parent]);
+        std::swap(wptIndex[nodes[i].wpt], wptIndex[nodes[parent].wpt]);
+
+        i = parent;
+        parent = (i - 1) >> 1;
+    }
+}
+
+void PrioQueue::heapDown(size_t i) {
+    auto minChild = (i << 1) + 1;
+    if (minChild + 1 < size && nodes[minChild + 1].prio < nodes[minChild].prio) {
+        minChild++;
+    }
+
+    while (minChild < size && nodes[minChild].prio < nodes[i].prio) {
+        std::swap(nodes[i], nodes[minChild]);
+        std::swap(wptIndex[nodes[i].wpt], wptIndex[nodes[minChild].wpt]);
+
+        i = minChild;
+        minChild = (i << 1) + 1;
+        if (minChild + 1 < size && nodes[minChild + 1].prio < nodes[minChild].prio) {
+            minChild++;
+        }
+    }
+}
+
+CWaypointNavigator::CWaypointNavigator(CBot *pBot) :
+    prioQueue(CWaypoints::numWaypoints()),
+    costs(CWaypoints::numWaypoints()),
+    heuristics(CWaypoints::numWaypoints()),
+    parents(CWaypoints::numWaypoints()),
+    flags(CWaypoints::numWaypoints()),
+    m_fBelief(CWaypoints::numWaypoints()) {
+
+    init();
+    m_pBot = pBot;
+    m_fNextClearFailedGoals = 0;
+    m_bDangerPoint = false;
+    m_iBeliefTeam = -1;
+    m_bLoadBelief = true;
+    m_bBeliefChanged = false;
+    memset(&m_lastFailedPath, 0, sizeof(failedpath_t));
+}
+
 ///////////////////////////////////////////////////////////////
 // initialise
 void CWaypointNavigator :: init ()
@@ -94,9 +187,9 @@ void CWaypointNavigator :: init ()
 	m_iPrevWaypoint = -1;
 	m_bWorkingRoute = false;
 
-	Q_memset(m_fBelief,0,sizeof(float)*CWaypoints::MAX_WAYPOINTS);
+    std::fill(m_fBelief.begin(), m_fBelief.end(), 0.0f);
 
-	m_iFailedGoals.Destroy();//.clear();//Destroy();
+    m_iFailedGoals.clear();
 }
 
 bool CWaypointNavigator :: beliefLoad ( ) 
@@ -798,38 +891,6 @@ bool CWaypointNavigator :: getHideSpotPosition ( Vector vCoverOrigin, Vector *vC
 
 	return true;
 }
-// AStar Algorithm : open a waypoint
-void CWaypointNavigator :: open ( AStarNode *pNode )
-{ 
-	if ( !pNode->isOpen() )
-	{
-		pNode->open();
-		//m_theOpenList.push_back(pNode);
-		m_theOpenList.add(pNode);
-	}
-}
-// AStar Algorithm : get the waypoint with lowest cost
-AStarNode *CWaypointNavigator :: nextNode ()
-{
-	AStarNode *pNode = NULL;
-
-	pNode = m_theOpenList.top();
-	m_theOpenList.pop();
-		
-	return pNode;
-}
-
-// clears the AStar open list
-void CWaypointNavigator :: clearOpenList ()
-{
-	m_theOpenList.destroy();
-
-
-	//for ( unsigned int i = 0; i < m_theOpenList.size(); i ++ )
-	//	m_theOpenList[i]->unOpen();
-
-	//m_theOpenList.clear();
-}
 
 void CWaypointNavigator :: failMove ()
 {
@@ -840,9 +901,8 @@ void CWaypointNavigator :: failMove ()
 	m_lastFailedPath.iTo = m_iCurrentWaypoint;
 	m_lastFailedPath.bSkipped = false;
 
-	if ( !m_iFailedGoals.IsMember(m_iGoalWaypoint) )
-	{
-		m_iFailedGoals.Add(m_iGoalWaypoint);
+	if (m_iFailedGoals.count(m_iGoalWaypoint) == 0) {
+        m_iFailedGoals.insert(m_iGoalWaypoint);
 		m_fNextClearFailedGoals = engine->Time() + randomFloat(8.0f,30.0f);
 	}
 }
@@ -871,49 +931,58 @@ float CWaypointNavigator :: distanceTo ( CWaypoint *pWaypoint )
 }
 
 // find route using A* algorithm
-bool CWaypointNavigator :: workRoute ( Vector vFrom, 
+bool CWaypointNavigator :: workRoute (Vector vFrom, 
 									  Vector vTo, 
 									  bool *bFail, 
 									  bool bRestart, 
 									  bool bNoInterruptions, 
 									  int iGoalId,
-									  int iConditions, int iDangerId )
-{
+									  int iConditions,
+                                      int iDangerId) {
+
 	extern ConVar bot_pathrevs;
 	extern ConVar rcbot_debug_show_route;
 
-	if ( bRestart )
-	{
+	if (bRestart) {
 		CWaypoint *pGoalWaypoint;
 
-		if ( wantToSaveBelief() )
-			beliefSave();
-		if ( wantToLoadBelief() )
-			beliefLoad();
+        if (wantToSaveBelief()) {
+            beliefSave();
+        }
+
+        if (wantToLoadBelief()) {
+            beliefLoad();
+        }
 
 		*bFail = false;
+		
+        m_bWorkingRoute = true;
 
-		m_bWorkingRoute = true;
+        if (iGoalId == -1) {
+            m_iGoalWaypoint = CWaypointLocations::NearestWaypoint(
+                vTo, // origin
+                CWaypointLocations::REACHABLE_RANGE, // nearest dist
+                m_iLastFailedWpt, // ignore wpt
+                true, // get visible
+                false, // get unreachable
+                true, // is bot
+                &m_iFailedGoals, // failed wpts
+                false, // nearest aiming only
+                m_pBot->getTeam()); // team
 
-		if ( iGoalId == -1 )
-			m_iGoalWaypoint = CWaypointLocations::NearestWaypoint(vTo,CWaypointLocations::REACHABLE_RANGE,m_iLastFailedWpt,true,false,true,&m_iFailedGoals,false,m_pBot->getTeam());
-		else
-			m_iGoalWaypoint = iGoalId;
+        } else {
+            m_iGoalWaypoint = iGoalId;
+        }
 
 		pGoalWaypoint = CWaypoints::getWaypoint(m_iGoalWaypoint);
 
-		if ( CClients::clientsDebugging(BOT_DEBUG_NAV) )
-		{
+		if (CClients::clientsDebugging(BOT_DEBUG_NAV)) {
 			char str[64];
-
 			sprintf(str,"goal waypoint = %d",m_iGoalWaypoint);
-
 			CClients::clientDebugMsg(BOT_DEBUG_NAV,str,m_pBot);
-
 		}
 
-		if ( m_iGoalWaypoint == -1 )
-		{
+		if (m_iGoalWaypoint == -1) {
 			*bFail = true;
 			m_bWorkingRoute = false;
 			return true;
@@ -924,19 +993,45 @@ bool CWaypointNavigator :: workRoute ( Vector vFrom,
 		Vector vIgnore;
 		float fIgnoreSize;
 
-		bool bIgnore = m_pBot->getIgnoreBox(&vIgnore,&fIgnoreSize) && (pGoalWaypoint->distanceFrom(vFrom) > (fIgnoreSize*2));
-
-		m_iCurrentWaypoint = CWaypointLocations::NearestWaypoint(vFrom,CWaypointLocations::REACHABLE_RANGE,m_iLastFailedWpt,
-			true,false,true,NULL,false,m_pBot->getTeam(),true,false,vIgnore,0,NULL,bIgnore,fIgnoreSize);
+		bool bIgnore = m_pBot->getIgnoreBox(&vIgnore, &fIgnoreSize) && pGoalWaypoint->distanceFrom(vFrom) > fIgnoreSize * 2.0f;
+		m_iCurrentWaypoint = CWaypointLocations::NearestWaypoint(
+            vFrom, // origin
+            CWaypointLocations::REACHABLE_RANGE, // nearest dist
+            m_iLastFailedWpt, // ignore wpt
+			true, // get visible
+            false, // get unreachable
+            true, // is bot
+            nullptr, // failed wpts
+            false, // nearest aiming only
+            m_pBot->getTeam(), // team
+            true, // check area
+            false, // get visible from other
+            vIgnore, // other pos
+            0, // flags only
+            nullptr, // player
+            bIgnore, // ignore other
+            fIgnoreSize); // ignore size
 
 		// no nearest waypoint -- find nearest waypoint
-		if ( m_iCurrentWaypoint == -1 )
-		{
+		if (m_iCurrentWaypoint == -1) {
 			// don't ignore this time
-			m_iCurrentWaypoint = CWaypointLocations::NearestWaypoint(vFrom,CWaypointLocations::REACHABLE_RANGE,-1,true,false,true,NULL,false,m_pBot->getTeam(),false,false,Vector(0,0,0),0,m_pBot->getEdict());
+			m_iCurrentWaypoint = CWaypointLocations::NearestWaypoint(
+                vFrom,
+                CWaypointLocations::REACHABLE_RANGE,
+                -1,
+                true,
+                false,
+                true,
+                nullptr,
+                false,
+                m_pBot->getTeam(),
+                false,
+                false,
+                Vector(0.0f, 0.0f, 0.0f),
+                0,
+                m_pBot->getEdict());
 
-			if ( m_iCurrentWaypoint == -1 )
-			{
+			if (m_iCurrentWaypoint == -1) {
 				*bFail = true;
 				m_bWorkingRoute = false;
 				return true;
@@ -946,23 +1041,27 @@ bool CWaypointNavigator :: workRoute ( Vector vFrom,
 		// reset
 		m_iLastFailedWpt = -1;
 
-		clearOpenList();
-		Q_memset(paths,0,sizeof(AStarNode)*CWaypoints::MAX_WAYPOINTS);
+        std::fill(costs.begin(), costs.end(), -1.0f);
+        std::fill(heuristics.begin(), heuristics.end(), -1.0f);
+        std::fill(parents.begin(), parents.end(), -1);
+        std::fill(flags.begin(), flags.end(), 0);
 
-		AStarNode *curr = &paths[m_iCurrentWaypoint];
-		curr->setWaypoint(m_iCurrentWaypoint);
-		curr->setHeuristic(m_pBot->distanceFrom(vTo));
-		open(curr);
+        costs[m_iCurrentWaypoint] = 0.0f;
+        heuristics[m_iCurrentWaypoint] = CWaypoints::getWaypoint(m_iCurrentWaypoint)->distanceFrom(pGoalWaypoint->getOrigin());
+        flags[m_iCurrentWaypoint] |= FL_ASTAR_OPEN;
+        //curr->setHeuristic(m_pBot->distanceFrom(vTo));
+
+        prioQueue.clear();
+        prioQueue.push(m_iCurrentWaypoint, costs[m_iCurrentWaypoint] + heuristics[m_iCurrentWaypoint]);
 	}
 /////////////////////////////////
-	if ( m_iGoalWaypoint == -1 )
-	{
+	if (m_iGoalWaypoint == -1) {
 		*bFail = true;
 		m_bWorkingRoute = false;
 		return true;
 	}
-	if ( m_iCurrentWaypoint == -1 )
-	{
+
+	if (m_iCurrentWaypoint == -1) {
 		*bFail = true;
 		m_bWorkingRoute = false;
 		return true;
@@ -972,11 +1071,13 @@ bool CWaypointNavigator :: workRoute ( Vector vFrom,
 	int iLoops = 0;
 	int iMaxLoops = bot_pathrevs.GetInt(); //this->m_pBot->getProfile()->getPathTicks();//IBotNavigator::MAX_PATH_TICKS;
 
-	if ( iMaxLoops <= 0 )
-		iMaxLoops = 200;
+    if (iMaxLoops <= 0) {
+        iMaxLoops = 200;
+    }
 	
-	if ( bNoInterruptions )
-		iMaxLoops *= 2; // "less" interruptions, however dont want to hang, or use massive cpu
+    if (bNoInterruptions) {
+        iMaxLoops *= 2; // "less" interruptions, however dont want to hang, or use massive cpu
+    }
 
 	int iCurrentNode; // node selected
 
@@ -987,7 +1088,6 @@ bool CWaypointNavigator :: workRoute ( Vector vFrom,
 	CWaypointVisibilityTable *pVisTable = CWaypoints::getVisiblity();
 
 	float fCost;
-	float fOldCost;
 
 	Vector vOrigin;
 
@@ -999,59 +1099,56 @@ bool CWaypointNavigator :: workRoute ( Vector vFrom,
 
 	float fBeliefSensitivity = 1.5f;
 
-	if ( iConditions & CONDITION_COVERT )
-		fBeliefSensitivity = 2.0f;
+    if ((iConditions & CONDITION_COVERT) > 0) {
+        fBeliefSensitivity = 2.0f;
+    }
 
-	while ( !bFoundGoal && !m_theOpenList.empty() && (iLoops < iMaxLoops) )
-	{
+    auto goalWpt = CWaypoints::getWaypoint(m_iGoalWaypoint);
+
+	while (!bFoundGoal && !prioQueue.isEmpty() && iLoops < iMaxLoops) {
 		iLoops ++;
 
-		curr = this->nextNode();
+        iCurrentNode = prioQueue.top();
+        prioQueue.pop();
 
-		if ( !curr )
-			break;
+        flags[iCurrentNode] &= ~FL_ASTAR_OPEN;
+        flags[iCurrentNode] |= FL_ASTAR_CLOSED;
 
-		iCurrentNode = curr->getWaypoint();
-		
 		bFoundGoal = (iCurrentNode == m_iGoalWaypoint);
-
-		if ( bFoundGoal )
-			break;
+        if (bFoundGoal) {
+            break;
+        }
 
 		// can get here now
-		m_iFailedGoals.Remove(iCurrentNode);//.Remove(iCurrentNode);
+        m_iFailedGoals.erase(iCurrentNode);
 
 		currWpt = CWaypoints::getWaypoint(iCurrentNode);
-
 		vOrigin = currWpt->getOrigin();
-
 		iMaxPaths = currWpt->numPaths();
 
-		succ = NULL;
-
-		for ( iPath = 0; iPath < iMaxPaths; iPath ++ )
-		{
+		for (iPath = 0; iPath < iMaxPaths; iPath++) {
 			iSucc = currWpt->getPath(iPath);
 
-			if ( iSucc == iLastNode )
-				continue;
-			if ( iSucc == iCurrentNode ) // argh?
-				continue;			
-			if ( m_lastFailedPath.bValid )
-			{
-				if ( m_lastFailedPath.iFrom == iCurrentNode ) 
-				{
-					// failed this path last time
-					if ( m_lastFailedPath.iTo == iSucc )
-					{
-						m_lastFailedPath.bSkipped = true;
-						continue;
-					}
-				}
+            if (iSucc == iLastNode) {
+                continue;
+            }
+
+            if (iSucc == iCurrentNode) {
+                continue;
+            }
+
+			if (m_lastFailedPath.bValid) {
+                if (m_lastFailedPath.iFrom == iCurrentNode) {
+                    // failed this path last time
+                    if (m_lastFailedPath.iTo == iSucc) {
+                        m_lastFailedPath.bSkipped = true;
+                        continue;
+                    }
+                }
 			}
 
-			succ = &paths[iSucc];
 			succWpt = CWaypoints::getWaypoint(iSucc);
+
 #ifndef __linux__
 			if ( rcbot_debug_show_route.GetBool() )
 			{
@@ -1063,119 +1160,126 @@ bool CWaypointNavigator :: workRoute ( Vector vFrom,
 				}
 			}
 #endif
-			if ( (iSucc != m_iGoalWaypoint) && !m_pBot->canGotoWaypoint(vOrigin,succWpt,currWpt) )
-				continue;
 
-			if ( currWpt->hasFlag(CWaypointTypes::W_FL_TELEPORT_CHEAT) )
-				fCost = curr->getCost();
-			else if ( succWpt->hasFlag(CWaypointTypes::W_FL_TELEPORT_CHEAT) )
-				fCost = succWpt->distanceFrom(vOrigin);
-			else 
-				fCost = curr->getCost()+(succWpt->distanceFrom(vOrigin));
+            if (iSucc != m_iGoalWaypoint && !m_pBot->canGotoWaypoint(vOrigin, succWpt, currWpt)) {
+                continue;
+            }
 
-			if ( !CWaypointDistances::isSet(m_iCurrentWaypoint,iSucc) || (CWaypointDistances::getDistance(m_iCurrentWaypoint,iSucc) > fCost) )
-				CWaypointDistances::setDistance(m_iCurrentWaypoint,iSucc,fCost);
+            if (currWpt->hasFlag(CWaypointTypes::W_FL_TELEPORT_CHEAT)) {
+                fCost = costs[iCurrentNode];
 
-			if ( succ->isOpen() || succ->isClosed() )
-			{
-				if ( succ->getParent() != -1 )
-				{
-					fOldCost = succ->getCost();
+            } else if (succWpt->hasFlag(CWaypointTypes::W_FL_TELEPORT_CHEAT)) {
+                fCost = succWpt->distanceFrom(vOrigin);
 
-					if ( fCost >= fOldCost )
-						continue; // ignore route
-				}
-				else
-					continue;
+            } else {
+                fCost = costs[iCurrentNode] + (succWpt->distanceFrom(vOrigin));
+            }
+
+            if (!CWaypointDistances::isSet(m_iCurrentWaypoint, iSucc) ||
+                 CWaypointDistances::getDistance(m_iCurrentWaypoint, iSucc) > fCost) {
+
+                CWaypointDistances::setDistance(m_iCurrentWaypoint, iSucc, fCost);
+            }
+
+			if (fBeliefSensitivity > 1.6f) {
+				if (m_pBot->getEnemy() != nullptr &&
+                    CBotGlobals::isPlayer(m_pBot->getEnemy()) &&
+                    m_pBot->isVisible(m_pBot->getEnemy())) {
+
+                    if (CBotGlobals::DotProductFromOrigin(m_pBot->getEnemy(), succWpt->getOrigin()) > 0.96f) {
+                        fCost += CWaypointLocations::REACHABLE_RANGE;
+                    }
+
+                    if (iDangerId != -1) {
+                        if (pVisTable->GetVisibilityFromTo(iDangerId, iSucc)) {
+                            fCost += m_fBelief[iSucc] * fBeliefSensitivity * 2.0f;
+                        }
+                    }
+
+                } else if (iDangerId != -1) {
+                    if (pVisTable->GetVisibilityFromTo(iDangerId, iSucc)) {
+                        fCost += m_fBelief[iSucc] * fBeliefSensitivity * 2.0f;
+                    }
+
+                } else {
+                    fCost += m_fBelief[iSucc] * fBeliefSensitivity;
+                }
+
+			} else {
+                fCost += m_fBelief[iSucc] * (fBeliefSensitivity - m_pBot->getProfile()->getBraveness());
+            }
+
+			if ((flags[iSucc] & FL_HEURISTIC_SET) == 0) {
+                if (fBeliefSensitivity > 1.6f) {
+                    //succ->setHeuristic(m_pBot->distanceFrom(succWpt->getOrigin())+succWpt->distanceFrom(vTo)+(m_fBelief[iSucc]*2));	
+                    heuristics[iSucc] = succWpt->distanceFrom(goalWpt->getOrigin()) + succWpt->distanceFrom(vTo) + (m_fBelief[iSucc] * 2.0f);
+
+                } else {
+                    //succ->setHeuristic(m_pBot->distanceFrom(succWpt->getOrigin())+succWpt->distanceFrom(vTo));
+                    heuristics[iSucc] = succWpt->distanceFrom(goalWpt->getOrigin()) + succWpt->distanceFrom(vTo);
+                }
+
+                flags[iSucc] |= FL_HEURISTIC_SET;
 			}
 
-			succ->unClose();
+            if ((flags[iSucc] & (FL_ASTAR_OPEN | FL_ASTAR_CLOSED)) > 0) {
+                if (costs[iSucc] <= fCost) {
+                    continue; // iSucc has a better a path than this
+                }
 
-			succ->setParent(iCurrentNode);
+                // found a better path for iSucc
 
-			if ( fBeliefSensitivity > 1.6f )
-			{
-				if ( (m_pBot->getEnemy() != NULL) && CBotGlobals::isPlayer(m_pBot->getEnemy()) && (m_pBot->isVisible(m_pBot->getEnemy())) )
-				{
-					if ( CBotGlobals::DotProductFromOrigin(m_pBot->getEnemy(),succWpt->getOrigin()) > 0.96f )
-						succ->setCost(fCost+CWaypointLocations::REACHABLE_RANGE);
-					else
-						succ->setCost(fCost);
+                if ((flags[iSucc] & FL_ASTAR_CLOSED) > 0) {
+                    flags[iSucc] &= ~FL_ASTAR_CLOSED; // reopen node
 
-					if ( iDangerId != -1 )
-					{
-						if ( pVisTable->GetVisibilityFromTo(iDangerId,iSucc) )
-							succ->setCost(succ->getCost()+(m_fBelief[iSucc]*fBeliefSensitivity*2));
-					}
-				}
-				else if ( iDangerId != -1 )
-				{
-					if ( !pVisTable->GetVisibilityFromTo(iDangerId,iSucc) )
-						succ->setCost(fCost);
-					else
-						succ->setCost(fCost+(m_fBelief[iSucc]*fBeliefSensitivity*2));
-				}
-				else
-					succ->setCost(fCost+(m_fBelief[iSucc]*fBeliefSensitivity));
-				//succ->setCost(fCost-(MAX_BELIEF-m_fBelief[iSucc]));
-				//succ->setCost(fCost-((MAX_BELIEF*fBeliefSensitivity)-(m_fBelief[iSucc]*(fBeliefSensitivity-m_pBot->getProfile()->m_fBraveness))));	
-			}
-			else
-				succ->setCost(fCost+(m_fBelief[iSucc]*(fBeliefSensitivity-m_pBot->getProfile()->getBraveness())));	
+                    prioQueue.push(iSucc, fCost + heuristics[iSucc]);
 
-			succ->setWaypoint(iSucc);
+                } else {
+                    // node already in open set
+                    prioQueue.relax(iSucc, fCost + heuristics[iSucc]);
+                }
 
-			if ( !succ->heuristicSet() )		
-			{
-				if ( fBeliefSensitivity > 1.6f )
-					succ->setHeuristic(m_pBot->distanceFrom(succWpt->getOrigin())+succWpt->distanceFrom(vTo)+(m_fBelief[iSucc]*2));	
-				else 
-					succ->setHeuristic(m_pBot->distanceFrom(succWpt->getOrigin())+succWpt->distanceFrom(vTo));		
-			}
+            } else {
+                // discovered a new node
+                prioQueue.push(iSucc, fCost + heuristics[iSucc]);
+            }
 
-			// Fix: do this AFTER setting heuristic and cost!!!!
-			if ( !succ->isOpen() )
-			{
-				open(succ);
-			}
-
+            flags[iSucc] |= FL_ASTAR_OPEN;
+            costs[iSucc] = fCost;
+            parents[iSucc] = iCurrentNode;
 		}
 
-		curr->close(); // close chosen node
-
+        flags[iCurrentNode] &= ~FL_ASTAR_OPEN;
+        flags[iCurrentNode] |= FL_ASTAR_CLOSED;
 		iLastNode = iCurrentNode;		
 	}
+
 	/////////
-	if ( iLoops == iMaxLoops )
-	{
-		//*bFail = true;
-		
+	if (iLoops == iMaxLoops) {
 		return false; // not finished yet, wait for next iteration
 	}
 
 	m_bWorkingRoute = false;
-	
-	clearOpenList(); // finished
 
-	if ( !bFoundGoal )
-	{
+	if (!bFoundGoal) {
 		*bFail = true;
 
 		//no other path
-		if ( m_lastFailedPath.bSkipped )
-			m_lastFailedPath.bValid = false;
+        if (m_lastFailedPath.bSkipped) {
+            m_lastFailedPath.bValid = false;
+        }
 
-		if ( !m_iFailedGoals.IsMember(m_iGoalWaypoint) )
-		{
-			m_iFailedGoals.Add(m_iGoalWaypoint);
+		if (m_iFailedGoals.count(m_iGoalWaypoint) == 0) {
+            m_iFailedGoals.insert(m_iGoalWaypoint);
 			m_fNextClearFailedGoals = engine->Time() + randomFloat(8.0f,30.0f);
 		}
 
 		return true; // waypoint not found but searching is complete
 	}
 
-	while ( !m_oldRoute.empty() )
-		m_oldRoute.pop();
+    while (!m_oldRoute.empty()) {
+        m_oldRoute.pop();
+    }
 
 	iCurrentNode = m_iGoalWaypoint;
 
@@ -1184,21 +1288,24 @@ bool CWaypointNavigator :: workRoute ( Vector vFrom,
 	iLoops = 0;
 
 	int iNumWaypoints = CWaypoints::numWaypoints();
-	float fDistance = 0.0;
+	float fDistance = 0.0f;
 	int iParent;
 
-	while ( (iCurrentNode != -1) && (iCurrentNode != m_iCurrentWaypoint ) && (iLoops <= iNumWaypoints) )
-	{
+	while (iCurrentNode != -1 && iCurrentNode != m_iCurrentWaypoint && iLoops <= iNumWaypoints) {
 		iLoops++;
 
 		m_currentRoute.Push(iCurrentNode);
 		m_oldRoute.push(iCurrentNode);
 
-		iParent = paths[iCurrentNode].getParent();
+        iParent = parents[iCurrentNode];
 
 		// crash bug fix
-		if ( iParent != -1 )
-			fDistance += (CWaypoints::getWaypoint(iCurrentNode)->getOrigin() - CWaypoints::getWaypoint(iParent)->getOrigin()).Length();
+        //if (iParent != -1) {
+            const auto currentOrigin = CWaypoints::getWaypoint(iCurrentNode)->getOrigin();
+            const auto parentOrigin = CWaypoints::getWaypoint(iParent)->getOrigin();
+            fDistance += (currentOrigin - parentOrigin).Length();
+        //}
+
 #ifndef __linux__		
 		if ( rcbot_debug_show_route.GetBool() )
 		{
@@ -1210,6 +1317,7 @@ bool CWaypointNavigator :: workRoute ( Vector vFrom,
 			}
 		}
 #endif
+
 		iCurrentNode = iParent;
 	}
 
@@ -1217,16 +1325,15 @@ bool CWaypointNavigator :: workRoute ( Vector vFrom,
 	m_fGoalDistance = fDistance;
 
 	// erh??
-	if ( iLoops > iNumWaypoints )
-	{
-		while ( !m_oldRoute.empty () )
-			m_oldRoute.pop();
+	if (iLoops > iNumWaypoints) {
+        while (!m_oldRoute.empty()) {
+            m_oldRoute.pop();
+        }
 
 		m_currentRoute.Destroy();
 		*bFail = true;
-	}
-	else
-	{
+
+	} else {
 		m_vGoal = CWaypoints::getWaypoint(m_iGoalWaypoint)->getOrigin();
 	}
 
@@ -1270,8 +1377,9 @@ bool CWaypointNavigator :: canGetTo ( Vector vOrigin )
 
 	if ( iwpt >= 0 )
 	{
-		if ( m_iFailedGoals.IsMember(iwpt) )
-			return false;
+        if (m_iFailedGoals.count(iwpt) == 1) {
+            return false;
+        }
 	}
 	else
 		return false;
@@ -1420,7 +1528,7 @@ void CWaypointNavigator :: updatePosition ()
 	// fix for bots not finding goals
 	if ( m_fNextClearFailedGoals && ( m_fNextClearFailedGoals < engine->Time() ) )
 	{
-		m_iFailedGoals.Destroy();
+        m_iFailedGoals.clear();
 		m_fNextClearFailedGoals = 0;
 	}
 
@@ -1441,7 +1549,7 @@ void CWaypointNavigator :: updatePosition ()
 void CWaypointNavigator :: clear()
 {
 	m_currentRoute.Destroy();
-	m_iFailedGoals.Destroy();//.clear();//Destroy();
+    m_iFailedGoals.clear();
 }
 // free up memory
 void CWaypointNavigator :: freeMapMemory ()

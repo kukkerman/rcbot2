@@ -37,6 +37,8 @@
 #include "bot_genclass.h"
 #include "bot_waypoint.h"
 
+#include <unordered_set>
+
 /*#define WAYPOINT_LOC(x)\
 	{\
 	m_iLocations[i][j][k].x;\
@@ -89,7 +91,7 @@ public:
 		Init();
 	}
 
-	static unsigned char *resetFailedWaypoints (dataUnconstArray<int> *iIgnoreWpts);
+	static unsigned char *resetFailedWaypoints (std::unordered_set<int> *iIgnoreWpts);
 
 	static void Init()
 	{
@@ -135,13 +137,13 @@ public:
 
 	static void AddWptLocation ( int iIndex, const float *fOrigin );
 
-	static void FindNearestInBucket ( int i, int j, int k, const Vector &vOrigin, float *pfMinDist, int *piIndex,int iIgnoreWpt, bool bGetVisible = true, bool bGetUnreachable = false, bool bIsBot = false, dataUnconstArray<int> *iFailedWpts = NULL, bool bNearestAimingOnly = false, int iTeam = 0, bool bCheckArea = false, bool bGetVisibleFromOther = false, Vector vOther = Vector(0,0,0), int iFlagsOnly = 0, edict_t *pPlayer = NULL );
+	static void FindNearestInBucket ( int i, int j, int k, const Vector &vOrigin, float *pfMinDist, int *piIndex,int iIgnoreWpt, bool bGetVisible = true, bool bGetUnreachable = false, bool bIsBot = false, std::unordered_set<int> *iFailedWpts = NULL, bool bNearestAimingOnly = false, int iTeam = 0, bool bCheckArea = false, bool bGetVisibleFromOther = false, Vector vOther = Vector(0,0,0), int iFlagsOnly = 0, edict_t *pPlayer = NULL );
 	static void DrawWaypoints ( CClient *pClient, float fDist );
 	
 	static void DeleteWptLocation ( int iIndex, const float *fOrigin );
 	
 	static int NearestWaypoint ( const Vector &vOrigin, float fDist, int iIgnoreWpt, bool bGetVisible = true, 
-		bool bGetUnreachable = false, bool bIsBot = false, dataUnconstArray<int> *iFailedWpts = NULL, 
+		bool bGetUnreachable = false, bool bIsBot = false, std::unordered_set<int> *iFailedWpts = NULL, 
 		bool bNearestAimingOnly = false, int iTeam = 0, bool bCheckArea = false, 
 		bool bGetVisibleFromOther = false, Vector vOther = Vector(0,0,0), int FlagsOnly = 0, 
 		edict_t *pPlayer = NULL, bool bIgnorevOther = false, float fIgnoreSize = 0.0f );

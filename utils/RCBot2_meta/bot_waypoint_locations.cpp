@@ -47,20 +47,16 @@ bool CWaypointLocations :: m_bIgnoreBox = false;
 
 #define READ_LOC(loc) abs((int)((int)(loc + HALF_MAX_MAP_SIZE) / BUCKET_SPACING));
 
-unsigned char *CWaypointLocations :: resetFailedWaypoints (dataUnconstArray<int> *iIgnoreWpts)
+unsigned char *CWaypointLocations :: resetFailedWaypoints (std::unordered_set<int> *iIgnoreWpts)
 {
 	Q_memset(g_iFailedWaypoints,0,sizeof(unsigned char)*CWaypoints::MAX_WAYPOINTS);
 	
 	if ( iIgnoreWpts )
 	{   
-		//dataStack<int> ignoreWptStack = *iIgnoreWpts;
-		int iWpt;
-		
-		//while ( !ignoreWptStack.IsEmpty() )
-		for ( int l = 0; l < iIgnoreWpts->Size(); l ++ )
-		{
-			if ( (iWpt = (*iIgnoreWpts)[l]) != -1 )//(iWpt = ignoreWptStack.ChooseFromStack()) != -1 )
-				g_iFailedWaypoints[iWpt] = 1;
+        for (auto iWpt: *iIgnoreWpts) {
+            if (iWpt != -1) {
+                g_iFailedWaypoints[iWpt] = 1;
+            }
 		}
 	}
 
@@ -554,7 +550,7 @@ void CWaypointLocations :: FindNearestBlastInBucket ( int i, int j, int k, const
 void CWaypointLocations :: FindNearestInBucket ( int i, int j, int k, const Vector &vOrigin,
 												float *pfMinDist, int *piIndex, int iIgnoreWpt, 
 												bool bGetVisible, bool bGetUnReachable, bool bIsBot, 
-												dataUnconstArray<int> *iFailedWpts, bool bNearestAimingOnly, 
+												std::unordered_set<int> *iFailedWpts, bool bNearestAimingOnly, 
 												int iTeam, bool bCheckArea, bool bGetVisibleFromOther, 
 												Vector vOther, int iFlagsOnly, edict_t *pPlayer )
 // Search for the nearest waypoint : I.e.
@@ -672,7 +668,7 @@ void CWaypointLocations :: FindNearestInBucket ( int i, int j, int k, const Vect
 // get the nearest waypoint INDEX from an origin
 int CWaypointLocations :: NearestWaypoint ( const Vector &vOrigin, float fNearestDist, 
 										   int iIgnoreWpt, bool bGetVisible, bool bGetUnReachable, 
-										   bool bIsBot, dataUnconstArray<int> *iFailedWpts, 
+										   bool bIsBot, std::unordered_set<int> *iFailedWpts, 
 										   bool bNearestAimingOnly, int iTeam, bool bCheckArea,
 										   bool bGetVisibleFromOther, Vector vOther, int iFlagsOnly, 
 										   edict_t *pPlayer, bool bIgnorevOther, float fIgnoreSize )
@@ -697,15 +693,13 @@ int CWaypointLocations :: NearestWaypoint ( const Vector &vOrigin, float fNeares
 	{
 		Q_memset(g_iFailedWaypoints,0,sizeof(unsigned char)*CWaypoints::MAX_WAYPOINTS);
 		
-		if ( iFailedWpts )
+		if ( iFailedWpts != nullptr )
 		{   
-			int iWpt;
-			
-			for ( int l = 0; l < iFailedWpts->Size(); l ++ )
-			{
-				if ( (iWpt=(*iFailedWpts)[l]) != -1 ) //( (iWpt = tempStack.ChooseFromStack()) != -1 )
-					g_iFailedWaypoints[iWpt] = 1;
-			}
+            for (auto iWpt : *iFailedWpts) {
+                if (iWpt != -1) {
+                    g_iFailedWaypoints[iWpt] = 1;
+                }
+            }
 		}
 	}
 
@@ -715,25 +709,36 @@ int CWaypointLocations :: NearestWaypoint ( const Vector &vOrigin, float fNeares
 		{
 			for ( k = iMinLock; k <= iMaxLock; k++ )
 			{
-				FindNearestInBucket(i,j,k,vOrigin,&fNearestDist,&iNearestIndex,iIgnoreWpt,bGetVisible,bGetUnReachable,bIsBot,iFailedWpts,bNearestAimingOnly,iTeam,bCheckArea,bGetVisibleFromOther,vOther,iFlagsOnly,pPlayer);
+				FindNearestInBucket(
+                    i, j, k,
+                    vOrigin,
+                    &fNearestDist,
+                    &iNearestIndex,
+                    iIgnoreWpt,
+                    bGetVisible,
+                    bGetUnReachable,
+                    bIsBot,
+                    iFailedWpts,
+                    bNearestAimingOnly,
+                    iTeam,
+                    bCheckArea,
+                    bGetVisibleFromOther,
+                    vOther,
+                    iFlagsOnly,
+                    pPlayer);
 			}
 		}
 	}
 
 	if ( iFailedWpts )
 	{   
-		int iWpt;
-		
-		for ( int l = 0; l < iFailedWpts->Size(); l ++ )
-		{
-			if ( (iWpt=(*iFailedWpts)[l]) != -1 ) //( (iWpt = tempStack.ChooseFromStack()) != -1 )
-			{
-				if ( g_iFailedWaypoints[iWpt] == 2 )
-				{
-					iFailedWpts->Remove(iWpt);
-				}
-			}
-		}
+        auto i = iFailedWpts->begin();
+        while (i != iFailedWpts->end()) {
+            auto act = i++;
+            if (*act != -1 && g_iFailedWaypoints[*act] == 2) {
+                iFailedWpts->erase(act);
+            }
+        }
 	}
 
 	m_bIgnoreBox = false;

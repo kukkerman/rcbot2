@@ -4571,7 +4571,7 @@ void CBotTF2 :: getTasks ( unsigned int iIgnore )
 
 	if ( bNeedAmmo || bNeedHealth )
 	{
-		dataUnconstArray<int> *failed;
+		std::unordered_set<int> *failed;
 		Vector vOrigin = getOrigin();
 
 		m_pNavigator->getFailedGoals(&failed);
@@ -4738,7 +4738,7 @@ void CBotTF2 :: getTasks ( unsigned int iIgnore )
 				}
 				else
 				{
-					dataUnconstArray<int> *failed;
+					std::unordered_set<int> *failed;
 					Vector vOrigin = getOrigin();
 
 					m_pNavigator->getFailedGoals(&failed);
@@ -7796,7 +7796,7 @@ void CBotTF2 :: enemyAtIntel ( Vector vPos, int type, int iArea )
 	// everyone go back to cap point unless doing something important
 	if ( (type == EVENT_CAPPOINT) || (!m_pNavigator->hasNextPoint() || ((m_pNavigator->getGoalOrigin()-getOrigin()).Length() > ((vPos-getOrigin()).Length()))) )
 	{
-		dataUnconstArray<int> *failed;
+		std::unordered_set<int> *failed;
 		m_pNavigator->getFailedGoals(&failed);
 		CWaypoint *pWpt = NULL;
 		int iIgnore = -1;

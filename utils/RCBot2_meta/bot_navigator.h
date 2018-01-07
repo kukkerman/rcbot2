@@ -35,6 +35,7 @@
 
 #include <vector>
 #include <queue>
+#include <unordered_set>
 
 #include "bot.h"
 #include "bot_waypoint.h"
@@ -102,7 +103,7 @@ public:
 
 	virtual void clear () = 0;
 
-	virtual void getFailedGoals (dataUnconstArray <int> **goals) = 0;
+	virtual void getFailedGoals (std::unordered_set<int> **goals) = 0;
 
 	inline Vector getGoalOrigin () { return m_vGoal; }
 
@@ -155,6 +156,31 @@ protected:
 #define FL_ASTAR_OPEN		4
 #define FL_HEURISTIC_SET	8
 
+class PrioQueue {
+private:
+    struct Node {
+        int wpt;
+        float prio;
+    };
+
+public:
+    PrioQueue(size_t numWaypoints);
+    bool isEmpty() const;
+    void clear();
+    int top() const;
+    void pop();
+    void push(int wpt, float prio);
+    void relax(int wpt, float newPrio);
+
+private:
+    void heapUp(size_t i);
+    void heapDown(size_t i);
+
+    std::vector<Node> nodes;
+    std::vector<size_t> wptIndex;
+    size_t size;
+};
+
 class AStarNode
 {
 public:
@@ -203,111 +229,6 @@ private:
 	unsigned char m_iFlags;
 	short int m_iParent;
 	int m_iWaypoint;
-};
-// Insertion sorted list
-class AStarListNode
-{
-public:
-	AStarListNode ( AStarNode *data )
-	{
-		m_Data = data;
-		m_Next = NULL;
-	}
-	AStarNode *m_Data;
-	AStarListNode *m_Next;
-};
-
-class AStarOpenList
-{
-public:
-	AStarOpenList()
-	{
-		m_Head = NULL;
-	}
-
-	bool empty ()
-	{
-		return (m_Head==NULL);
-	}
-
-	AStarNode *top ()
-	{
-		if ( m_Head == NULL )
-			return NULL;
-		
-		return m_Head->m_Data;
-	}
-
-	void pop ()
-	{
-		if ( m_Head != NULL )
-		{
-			AStarListNode *t = m_Head;
-
-			m_Head = m_Head->m_Next;
-
-			delete t;
-		}
-	}
-
-
-	void add ( AStarNode *data )
-	{
-		AStarListNode *newNode = new AStarListNode(data);
-		AStarListNode *t;
-		AStarListNode *p;
-
-		if ( m_Head == NULL )
-			m_Head = newNode;
-		else
-		{
-			if ( data->precedes(m_Head->m_Data) )
-			{
-				newNode->m_Next = m_Head;
-				m_Head = newNode;
-			}
-			else
-			{
-				p = m_Head;
-				t = m_Head->m_Next;
-
-				while ( t != NULL )
-				{
-					if ( data->precedes(t->m_Data) )
-					{
-						p->m_Next = newNode;
-						newNode->m_Next = t;
-						break;
-					}
-
-					p = t;
-					t = t->m_Next;
-				}
-
-				if ( t == NULL )
-					p->m_Next = newNode;
-
-			}
-		}
-	}
-
-	void destroy ()
-	{
-		AStarListNode *t;
-
-		while ( m_Head != NULL )
-		{
-			t = m_Head;
-			m_Head = m_Head->m_Next;
-			delete t;
-			t = NULL;
-		}
-
-		m_Head = NULL;
-	}
-	
-private:
-	AStarListNode *m_Head;
 };
 
 /*
@@ -365,19 +286,9 @@ typedef struct
 class CWaypointNavigator : public IBotNavigator
 {
 public:
-	CWaypointNavigator ( CBot *pBot ) 
-	{ 
-		init();
-		m_pBot = pBot; 
-		m_fNextClearFailedGoals = 0;
-		m_bDangerPoint = false;
-		m_iBeliefTeam = -1;
-		m_bLoadBelief = true;
-		m_bBeliefChanged = false;
-		memset(&m_lastFailedPath,0,sizeof(failedpath_t));
-	}
-
-	void init ();
+    CWaypointNavigator(CBot *pBot);
+	
+    void init ();
 
 	CWaypoint *chooseBestFromBelief ( dataUnconstArray<CWaypoint*> *goals, bool bHighDanger = false, int iSearchFlags = 0, int iTeam = 0);
 	CWaypoint *chooseBestFromBeliefBetweenAreas ( dataUnconstArray<AStarNode*> *goals, bool bHighDanger = false, bool bIgnoreBelief = false );
@@ -412,17 +323,11 @@ public:
 
 	bool nextPointIsOnLadder ();
 
-	void open ( AStarNode *pNode );
-
-	AStarNode *nextNode ();
-
 	float distanceTo ( Vector vOrigin );
 
 	float distanceTo ( CWaypoint *pWaypoint );
 
 	Vector getCoverOrigin ( Vector vCover );
-
-	void clearOpenList ();
 
 	float getCurrentBelief ( );
 
@@ -437,7 +342,7 @@ public:
 	// nearest cover postion to both vectors
 	bool getHideSpotPosition ( Vector vCoverOrigin, Vector *vCover );
 
-	void getFailedGoals ( dataUnconstArray <int> **goals) { *goals = &m_iFailedGoals; }
+	void getFailedGoals ( std::unordered_set<int> **goals) { *goals = &m_iFailedGoals; }
 
 	int numPaths ( );
 
@@ -483,16 +388,16 @@ private:
 
 	int m_iLastFailedWpt;
 
-	AStarNode paths[CWaypoints::MAX_WAYPOINTS];
-	AStarNode *curr;
-	AStarNode *succ;
-
-	dataUnconstArray<int> m_iFailedGoals;
+    PrioQueue prioQueue;
+    std::vector<float> costs;
+    std::vector<float> heuristics;
+    std::vector<int> parents;
+    std::vector<unsigned char> flags;
+	
+    std::unordered_set<int> m_iFailedGoals;
 	float m_fNextClearFailedGoals;
 
-	float m_fBelief [CWaypoints::MAX_WAYPOINTS];
-
-	AStarOpenList m_theOpenList;
+    std::vector<float> m_fBelief;
 
 	Vector m_vOffset;
 	bool m_bOffsetApplied;
