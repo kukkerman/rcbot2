@@ -193,9 +193,8 @@ void CWaypointNavigator :: init ()
 	m_iNextWaypoint = -1;
 	m_iGoalWaypoint = -1;
 
-	m_currentRoute.Destroy();
-	while( !m_oldRoute.empty() )
-		m_oldRoute.pop();
+	m_currentRoute.clear();
+    m_oldRoute.clear();
 
 	m_iLastFailedWpt = -1;
 	m_iPrevWaypoint = -1;
@@ -373,16 +372,10 @@ bool CWaypointNavigator :: randomDangerPath (Vector *vec)
 	if ( m_iCurrentWaypoint == -1 )
 		return false;
 
-	if ( !m_currentRoute.IsEmpty() )
-	{
-		static int *head;
-		static CWaypoint *pW;
-		
-		head = m_currentRoute.GetHeadInfoPointer();
-
-		if ( head && (*head!= -1))
-		{
-			pOnRouteTo = CWaypoints::getWaypoint(*head);
+    if (!m_currentRoute.empty()) {
+        const auto head = m_currentRoute.front();
+		if (head != -1) {
+			pOnRouteTo = CWaypoints::getWaypoint(head);
 		}
 	}
 
@@ -1246,13 +1239,11 @@ bool CWaypointNavigator :: workRoute (Vector vFrom,
 		return true; // waypoint not found but searching is complete
 	}
 
-    while (!m_oldRoute.empty()) {
-        m_oldRoute.pop();
-    }
+    m_oldRoute.clear();
 
 	iCurrentNode = m_iGoalWaypoint;
 
-	m_currentRoute.Destroy();
+	m_currentRoute.clear();
 
 	iLoops = 0;
 
@@ -1263,8 +1254,8 @@ bool CWaypointNavigator :: workRoute (Vector vFrom,
 	while (iCurrentNode != -1 && iCurrentNode != m_iCurrentWaypoint && iLoops <= iNumWaypoints) {
 		iLoops++;
 
-		m_currentRoute.Push(iCurrentNode);
-		m_oldRoute.push(iCurrentNode);
+		m_currentRoute.push_front(iCurrentNode);
+        m_oldRoute.push_front(iCurrentNode);
 
         iParent = parents[iCurrentNode];
 
@@ -1295,11 +1286,8 @@ bool CWaypointNavigator :: workRoute (Vector vFrom,
 
 	// erh??
 	if (iLoops > iNumWaypoints) {
-        while (!m_oldRoute.empty()) {
-            m_oldRoute.pop();
-        }
-
-		m_currentRoute.Destroy();
+        m_oldRoute.clear();
+		m_currentRoute.clear();
 		*bFail = true;
 
 	} else {
@@ -1321,16 +1309,10 @@ Vector CWaypointNavigator :: getNextPoint ()
 
 bool CWaypointNavigator :: getNextRoutePoint ( Vector *point )
 {
-	if ( !m_currentRoute.IsEmpty() )
-	{
-		static int *head;
-		static CWaypoint *pW;
-		
-		head = m_currentRoute.GetHeadInfoPointer();
-
-		if ( head && (*head!= -1))
-		{
-			pW = CWaypoints::getWaypoint(*head);
+    if (!m_currentRoute.empty()) {
+        const auto head = m_currentRoute.front();
+        if (head != -1) {
+			auto pW = CWaypoints::getWaypoint(head);
 			*point = pW->getOrigin();// + pW->applyRadius();
 
 			return true;
@@ -1361,12 +1343,13 @@ void CWaypointNavigator :: rollBackPosition ()
 	m_vPreviousPoint = m_pBot->getOrigin();
 	m_iCurrentWaypoint = CWaypointLocations::NearestWaypoint(m_vPreviousPoint,CWaypointLocations::REACHABLE_RANGE,m_iLastFailedWpt,true,false,true,NULL,false,m_pBot->getTeam());
 
-	while ( !m_currentRoute.IsEmpty() ) // reached goal!!
-	{		
-		if ( m_iCurrentWaypoint == m_currentRoute.Pop() )
-		{
-			if ( !m_currentRoute.IsEmpty() )
-				m_iCurrentWaypoint = m_currentRoute.Pop();
+    while (!m_currentRoute.empty()) { // reached goal!!
+        const auto head = m_currentRoute.front();
+        m_currentRoute.pop_front();
+
+        if (m_iCurrentWaypoint == head && !m_currentRoute.empty()) {
+            m_iCurrentWaypoint = m_currentRoute.front();
+            m_currentRoute.pop_front();
 		}
 	}
 
@@ -1446,7 +1429,7 @@ void CWaypointNavigator :: updatePosition ()
 			m_bDangerPoint = false;
 
 
-			if ( m_currentRoute.IsEmpty() ) // reached goal!!
+			if ( m_currentRoute.empty() ) // reached goal!!
 			{
 				// fix: bots jumping at wrong positions
 				m_pBot->touchedWpt(pWaypoint,-1);
@@ -1466,7 +1449,8 @@ void CWaypointNavigator :: updatePosition ()
 				int iPrevWpt = m_iPrevWaypoint;
 				m_vPreviousPoint = m_pBot->getOrigin();
 				m_iPrevWaypoint = m_iCurrentWaypoint;
-				m_iCurrentWaypoint = m_currentRoute.Pop();
+				m_iCurrentWaypoint = m_currentRoute.front();
+                m_currentRoute.pop_front();
 
 				// fix: bots jumping at wrong positions
 				m_pBot->touchedWpt(pWaypoint,m_iCurrentWaypoint,iPrevWpt);
@@ -1517,7 +1501,7 @@ void CWaypointNavigator :: updatePosition ()
 
 void CWaypointNavigator :: clear()
 {
-	m_currentRoute.Destroy();
+	m_currentRoute.clear();
     m_iFailedGoals.clear();
 }
 // free up memory
@@ -1534,7 +1518,7 @@ void CWaypointNavigator :: freeAllMemory ()
 
 bool CWaypointNavigator :: routeFound ()
 {
-	return !m_currentRoute.IsEmpty();
+	return !m_currentRoute.empty();
 }
 
 /////////////////////////////////////////////////////////
@@ -3024,13 +3008,26 @@ bool CWaypoint :: checkReachable ()
 	return m_bIsReachable;
 }
 
-int CWaypoint :: numPaths ()
+int CWaypoint :: numPaths () const
 {
 	return m_thePaths.size();
 }
 
 const std::unordered_set<int>& CWaypoint::getPaths() const {
     return m_thePaths;
+}
+
+int CWaypoint::getRandomPath() const {
+    if (numPaths() > 0) {
+        auto p = getPaths().cbegin();
+        for (auto i = randomInt(0, numPaths() - 1); i > 0; i--) {
+            ++p;
+        }
+
+        return *p;
+    }
+
+    return -1;
 }
 
 bool CWaypoint :: isPathOpened ( Vector vPath )
@@ -3071,13 +3068,26 @@ void CWaypoint :: removePathFrom ( int iWaypointIndex )
     m_PathsTo.erase(iWaypointIndex);
 }
 
-int CWaypoint :: numPathsToThisWaypoint ()
+int CWaypoint :: numPathsToThisWaypoint () const
 {
 	return m_PathsTo.size();
 }
 
 const std::unordered_set<int>& CWaypoint::getPathsTo() const {
     return m_PathsTo;
+}
+
+int CWaypoint::getRandomPathTo() const {
+    if (numPathsToThisWaypoint() > 0) {
+        auto p = getPathsTo().cbegin();
+        for (auto i = randomInt(0, numPathsToThisWaypoint() - 1); i > 0; i--) {
+            ++p;
+        }
+
+        return *p;
+    }
+
+    return -1;
 }
 
 bool CWaypoint :: addPathTo ( int iWaypointIndex )

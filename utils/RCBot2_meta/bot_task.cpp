@@ -2968,12 +2968,7 @@ void CBotTF2SnipeCrossBow::execute(CBot *pBot, CBotSchedule *pSchedule)
 			if (m_iHideWaypoint == -1)
 			{
 				// can't find a useful hide waypoint -- choose a random one
-                auto wpt = pWaypoint->getPaths().cbegin();
-                for (auto i = randomInt(0, pWaypoint->numPaths() - 1); i > 0; i--) {
-                    ++wpt;
-                }
-                m_iHideWaypoint = *wpt;
-
+                m_iHideWaypoint = pWaypoint->getRandomPath();
 				if (m_iHideWaypoint != -1)
 				{
 					CWaypoint *pHideWaypoint = CWaypoints::getWaypoint(m_iHideWaypoint);
@@ -3254,12 +3249,7 @@ void CBotTF2Snipe :: execute (CBot *pBot,CBotSchedule *pSchedule)
 			if (m_iHideWaypoint == -1)
 			{
 				// can't find a useful hide waypoint -- choose a random one
-                auto wpt = pWaypoint->getPaths().cbegin();
-                for (auto i = randomInt(0, pWaypoint->numPaths() - 1); i > 0; i--) {
-                    ++wpt;
-                }
-                m_iHideWaypoint = *wpt;
-
+                m_iHideWaypoint = pWaypoint->getRandomPath();
 				if (m_iHideWaypoint != -1)
 				{
 					CWaypoint *pHideWaypoint = CWaypoints::getWaypoint(m_iHideWaypoint);

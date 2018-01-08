@@ -384,8 +384,8 @@ private:
 
 	failedpath_t m_lastFailedPath;
 
-	dataStack<int> m_currentRoute;
-	std::queue<int> m_oldRoute;
+    std::list<int> m_currentRoute;
+    std::list<int> m_oldRoute;
 
 	int m_iLastFailedWpt;
 

@@ -347,11 +347,13 @@ public:
 
 	float distanceFrom ( Vector vOrigin );
 
-	int numPaths ();
-
-	int numPathsToThisWaypoint();
-    const std::unordered_set<int>& getPathsTo() const;
+	int numPaths() const;
     const std::unordered_set<int>& getPaths() const;
+    int getRandomPath() const;
+
+	int numPathsToThisWaypoint() const;
+    const std::unordered_set<int>& getPathsTo() const;
+    int getRandomPathTo() const;
 
 	void load ( FILE *bfp, int iVersion );
 
