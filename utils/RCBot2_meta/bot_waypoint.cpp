@@ -2037,8 +2037,7 @@ void CWaypoint :: init ()
 	setAim(0);
     m_thePaths.clear();
 	m_iArea = 0;
-	m_fRadius = 0;	
-	m_bUsed = true;
+	m_fRadius = 0.0f;	
 	m_fNextCheckGroundTime = 0.0f;
 	m_bHasGround = false;
 	m_fRadius = 0.0f;
@@ -2059,7 +2058,7 @@ void CWaypoint :: save ( FILE *bfp )
 	int iPaths = numPaths();
 	fwrite(&iPaths,sizeof(int),1,bfp);
 
-    for (auto iPath : m_PathsTo) {
+    for (auto iPath : m_thePaths) {
 		fwrite(&iPath,sizeof(int),1,bfp);		
 	}
 
@@ -2167,8 +2166,6 @@ void CWaypoints :: init (const char *pszAuthor, const char *pszModifiedBy)
 
 	for ( int i = 0; i < MAX_WAYPOINTS; i ++ )
 		m_theWaypoints[i].init();
-
-	//Q_memset(m_theWaypoints,0,sizeof(CWaypoint)*MAX_WAYPOINTS);	
 
 	CWaypointLocations::Init();
 	CWaypointDistances::reset();
